@@ -1,0 +1,101 @@
+data ex1;
+input brand $ car position y;
+cards;
+C 1 1 12
+B 1 2 14
+A 1 3 17
+D 1 4 13
+D 2 1 11
+C 2 2 12
+B 2 3 14
+A 2 4 14
+A 3 1 13
+D 3 2 11
+C 3 3 10
+B 3 4 13
+B 4 1 8
+A 4 2 13
+D 4 3 9
+C 4 4 9
+;run;
+
+proc anova data=ex1;
+class brand car position;
+model y=brand car position;
+means brand car/tukey;
+run;
+
+proc glm data=ex1;
+class brand car position;
+model y=brand car position/ss3;
+means brand car/tukey;
+run;
+
+
+proc anova data=ex1;
+class brand car;
+model y=brand car;
+run;
+
+data bibd;
+input treat block y;
+cards;
+1 1 73
+2 1 .
+3 1 73
+4 1 75
+1 2 74
+2 2 75
+3 2 75
+4 2 .
+1 3 .
+2 3 67
+3 3 68
+4 3 72
+1 4 71
+2 4 72
+3 4 .
+4 4 75
+;run;
+
+proc anova data=bibd;
+class treat block;
+model y=treat block;
+run;
+
+proc glm data=bibd;
+class treat block;
+model y=treat block/ss3;
+*means treat block/tukey; 
+run;
+
+
+
+/* C드라이브에 실계실 폴더 만들기  */
+libname inha "C:\실계실";
+
+data inha.man inha.woman;
+	set sashelp.class;
+	/* 조건에 만족하는 데이터셋에 저장 */
+	if sex="남" then output inha.man; 
+	if sex="여" then output inha.woman;
+run;
+
+
+data one;
+set sashelp.class;
+keep name sex; /* keep 가져올 변수 */
+run;
+
+data two;
+set sashelp.class;
+drop sex; /* drop 제거할 변수 */
+run;
+
+data new;
+	set WORK.QUERY_FOR_ONE;
+	/* 조건에 만족하는 변수 생성 */
+	if age >=15 then new_age="Y";
+	else new_age="N";
+run;
+

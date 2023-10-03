@@ -1,0 +1,1 @@
+product_info 및 purchase_info dataset을 실습전에 다운 받아주세요!!

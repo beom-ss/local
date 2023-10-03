@@ -1,0 +1,205 @@
+/* 4.3번문제 */
+data duddnd2;
+infile "D:\duddnd2.txt" expandtabs firstobs=2;
+input u m ;
+run; 
+
+/*데이타set 입력 */
+proc reg data= duddnd2;
+model u=m;
+run;
+
+/*회귀 분석*/
+proc gplot data=duddnd2 ;                         
+plot  u*m=1 u*m=2 / overlay ;
+run ; 
+
+/* 산점도 */
+proc reg data=duddnd2 ;
+model u = m/ r ;
+output out=duddnd22 
+p=yhat	Residual=ei  Student=ri  Cookd=Ci;
+quit;
+
+proc reg data=duddnd2 ;
+model u = m  /influence ;
+output out= duddnd23
+p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+proc reg data=duddnd2 ;
+model u = m / r influence vif ;
+ods output Outputstatistics = duddnd2all; /*모든값을출력 */
+quit;
+
+proc univariate data=duddnd23 normal plot;    /*(표준화)잔차 정규확률플롯*/
+VAR ti ;
+QQPLOT ti  / NORMAL(MU=EST SIGMA=EST COLOR=RED L=1) ;
+HISTOGRAM / NORMAL(COLOR=MAROON W=4) CFILL = BLUE CFRAME = LIGR ;
+INSET MEAN STD / CFILL=BLANK FORMAT=5.2 ;
+run;
+
+data duddnd24 ;                 
+SET duddnd23 ;
+id = _N_ ;  
+RUN; 
+
+proc plot data=duddnd24 ;   
+plot ti * id      
+plot ti * m      
+plot ti * yhat  
+run;        
+
+proc plot data=duddnd24 ;   
+  /*leverage value의플롯*/
+plot  hii * id /vpos=30 hpos=120 ;                
+ /*Cook Distance 플롯*/
+plot  cooki * id /vpos=30 hpos=120 ;              
+/*DFITS값의 플롯*/
+plot  df_fit * id /vpos=30 hpos=120 ;                
+run;
+
+data duddnd25 ;
+set duddnd24 ;
+di = (ei/sqrt(2.59540)) ;
+potential_Fuction = hii/(1-hii) ;
+residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+hadi = potential_Fuction + residual_Function ;
+run;
+
+proc plot data=duddnd25 ;   
+plot  hadi * id /vpos=30 hpos=120 ;                                              
+/*잠재성-잔차플롯*/
+plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;    
+run;
+  /*hadi의 영향력 측도의 인덱스 플롯*/ /*(a) u = -2.34275 + (0.08993)m + e */ /*(b)
+
+/* 1)산점도를 통해서 충분한 선형적으로 띤다는것을 알수있음.
+
+2)
+오차 독립성가정에 의해서 잔차의 인덱스 플롯 그래프에서 점들이 임의적으로 흩어져있어야 위반되지않는다. 
+랜덤은 아닌듯 하게 생각하기에 위반하지 않는다고 결론을 내린다.                         ---- 독립이 아닌데 ???
+표준화잔차의 플롯을 보면 거의 직선의 형태를 나타내므로 정규성을 위반하지 않는다.
+표준화잔차 대 적합값의 플롯이 랜덤분포를 하여 등분산성에 위반되지 않는다. */
+
+/* 연습문제 4 . 12 */
+data duddnd;
+infile "D:\duddnd.txt" expandtabs firstobs=2;
+input y x1 x2 x3 x4 x5 x6 ;
+run; 
+
+/*데이타set 입력 */
+proc gplot data=duddnd ;                         
+plot  y*x1=1 y*x1=2 / overlay ;
+run; 
+
+proc gplot data=duddnd ;                         
+plot  y*x2=1 y*x2=2 / overlay ;
+run ; 
+
+proc duddnd data= duddnd;
+model y = x1 x2 x3 x4 x5 x6;
+run;
+
+/*회귀 분석 */
+proc corr data= duddnd cov;
+var y; with x1 x2 x3 x4 x5 x6;
+run;
+
+/* cov 분석 */
+proc duddnd data=duddnd ;
+	
+model y =  x1 x2 x3 x4 x5 x6/ r ;
+	
+output out=duddnd2 
+		
+p=yhat	Residual=ei  Student=ri  Cookd=Ci;
+quit;
+
+proc duddnd data=duddnd ;
+model y =  x1 x2 x3 x4 x5 x6  /r influence ;
+output out= duddnd3
+p=yhat	Residual=ei  Student=ri  Cookd=Ci Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+proc duddnd data=duddnd ;
+	
+model y = x1 x2 x3 x4 x5 x6 / r influence vif ;
+/* 모든값을 출력 */	
+ods output Outputstatistics = duddndall;  
+quit;
+ /*잔차 plot*/
+proc univariate data=duddnd3 normal plot;    
+VAR ti ;
+QQPLOT ti  / NORMAL(MU=EST SIGMA=EST COLOR=RED L=1) ;
+HISTOGRAM / NORMAL(COLOR=MAROON W=4) CFILL = BLUE CFRAME = LIGR ;
+INSET MEAN STD / CFILL=BLANK FORMAT=5.2 ;
+run;
+
+data duddnd4 ;                 
+SET duddnd3 ;
+id = _N_ ;  
+RUN; 
+
+proc plot data=duddnd4 ;   
+plot ti * id      /vpos=30 hpos=120 ;  
+plot ti * x1      /vpos=30 hpos=120 ;  
+plot ti * x2      /vpos=30 hpos=120 ;
+plot ti * x3      /vpos=30 hpos=120 ;
+plot ti * x4      /vpos=30 hpos=120 ;
+plot ti * x5      /vpos=30 hpos=120 ;
+plot ti * x6      /vpos=30 hpos=120 ;
+plot ti * yhat  /vpos=30 hpos=120 ;   
+run;       
+
+proc duddnd data=duddnd ;
+model y = x1 x2 x3 x4 x5 x6 ;
+quit;
+
+data duddnd5 ;
+set duddnd4 ;
+di = (ei/sqrt(24810082)) ;
+potential_Fuction = hii/(1-hii) ;
+residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+hadi = potential_Fuction + residual_Function ;
+run;
+
+/* Hi의값*/
+
+data duddnd6;
+set duddnd3;
+drop y x1 x2 x3 x4 x5 x6 yhat ei ti hii cov press;
+run;
+/*(b)번의 정답*/
+proc plot data=duddnd4 ;   
+plot  cooki * id /vpos=30 hpos=120 ;               
+plot  df_fit * id /vpos=30 hpos=120 ;                
+run;
+/*(c) 의답*/
+proc plot data=duddnd5 ;   
+plot  hadi * id /vpos=30 hpos=120 ;                                                 /*hadi의 영향력 측도의 인덱스 플롯*/
+plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;    /*잠재성 - 잔차 플롯*/
+run;/*(c) 의답*/
+
+proc plot data=duddnd4 ;   
+plot ti * id /vpos=30 hpos=120 ;/*(표준화)잔차의 인덱스 플롯*/
+run;/*(c) 의답*/
+proc plot data=duddnd5 ;   
+plot  hii * id /vpos=50 hpos=120 ;                    
+run;
+proc insight data=duddnd5 ; 
+run;/*(d) Cook's Distance 인덱스 플롯, DFITS값의 인덱스 플롯, hadi의 영향력 측도의 인덱스 플롯, 잠재성-잔차 플롯를 통하여 찾아낸다.*/
+
+
+                                      --------- 그래서 몇번 몇번 관측치가 영향력 있다..는 것인지 ?? 
+
+/*(a) 최소제곱의 경우를 위반하는지는 회귀분석의 가정을 알아야 한다.
+회귀분석을 통해 알스퀘어가 >95%이어서 선형성을 띠었다고 할수있음.
+정규성은 정규확률플롯을 통해 정규성을 위반하지않는다는걸 알수있음.
+등분산성은 표준화잔차 대 적합값의 도표에 의해 알 수 있고 random분포를 나타내지 않았다. 그래서 위반할수 있다고 할수있음.
+독립성은 표준화잔차의 인덱스플롯을 통해 알 수 있고 표가 0 주위에 수평 안에서 임의적으로 흩어져 있어야함.
+공선성은 vif가 10을 넘으면 안되고 코딩을 해서 돌려서 나온 값을 비교하면 x4,x5가 공선성에 위반된다는 걸 알수있음.*/
+
+
+                                     --------- 공선성을 위반한다 ???? 공선성은 그냥 잇으면 안되는 것인데...
+

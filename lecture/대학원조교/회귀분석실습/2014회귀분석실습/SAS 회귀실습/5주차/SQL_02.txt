@@ -1,0 +1,194 @@
+DATA KUK1; 
+INPUT NAME $ KEY; 
+CARDS; 
+박헌진 150
+이우주 176
+김진경 140
+황진수 155
+;
+
+DATA KUK2; 
+INPUT NAME $ JUMSU; 
+CARDS; 
+이우주 55
+김진경 140
+전홍석 150
+;
+
+DATA KUK11; 
+INPUT NAME $ KEY; 
+CARDS; 
+박헌진 150
+이우주 176
+김진경 140
+김진경 140
+김진경 140
+김진경 140
+황진수 155
+;
+
+DATA KUK22; 
+INPUT NAME $ JUMSU; 
+CARDS; 
+이우주 55
+김진경 140
+김진경 140
+전홍석 150
+;
+
+*********************************************;
+* 3. 내부 결합(Inner Join);
+*********************************************;
+PROC SQL;
+  CREATE TABLE INNER1 AS
+    SELECT A.NAME,
+           A.KEY,
+           B.JUMSU
+    FROM   KUK1 A
+           INNER JOIN KUK2 B
+                 ON A.NAME = B.NAME;
+QUIT;
+
+PROC SQL;
+  CREATE TABLE INNER2 AS
+    SELECT A.NAME,
+           A.KEY,
+           B.JUMSU
+    FROM   KUK1 A, KUK2 B
+    WHERE  A.NAME = B.NAME;
+QUIT;
+
+* 데이터 스텝;
+PROC SORT DATA=KUK1;
+     BY NAME;
+RUN;
+
+PROC SORT DATA=KUK2;
+     BY NAME;
+RUN;
+
+DATA INNER3;
+ MERGE KUK1(IN=A) KUK2(IN=B);
+     BY NAME;
+     IF A AND B;
+RUN;
+
+*********************************************;
+* 4. 외부조인(Left Join);
+*********************************************;
+PROC SQL;
+  CREATE TABLE LEFT1 AS
+    SELECT A.NAME,
+           A.KEY,
+           B.JUMSU
+    FROM   KUK1 A
+           LEFT JOIN KUK2 B
+                 ON A.NAME = B.NAME;
+QUIT;
+
+* 데이터 스텝;
+PROC SORT DATA=KUK1;
+     BY NAME;
+RUN;
+
+PROC SORT DATA=KUK2;
+     BY NAME;
+RUN;
+
+DATA LEFT2;
+ MERGE KUK1(IN=A) KUK2(IN=B);
+     BY NAME;
+     IF A;
+RUN;
+
+
+*********************************************;
+* LEFT 결합(WHERE절)-1;
+*********************************************;
+* 4.2 PROC SQL과 데이터 스텝(WHERE 절);
+
+* KUK1테이블에 단독으로 존재하는 데이터 출력.;
+PROC SQL;
+  CREATE TABLE LEFT3 AS
+    SELECT A.NAME,A.KEY,B.JUMSU
+    FROM   KUK1 A
+           LEFT JOIN KUK2 B
+                ON A.NAME = B.NAME
+    WHERE  B.NAME IS NULL;
+QUIT; 
+
+* 데이터 스텝;
+DATA LEFT4;
+ MERGE KUK1(IN=A) KUK2(IN=B);
+     BY NAME;
+     IF A AND B NE 1;  * IF A AND B=0;
+RUN;
+
+
+*********************************************;
+* LEFT 결합(ON절);
+*********************************************;
+* 4.2 PROC SQL과 데이터 스텝(ON 절);
+* * KUK1테이블에서 150 미만을 대상으로 결합 작업 수행;
+PROC SQL;
+  CREATE TABLE LEFT7_1 AS
+    SELECT A.NAME,A.KEY,B.JUMSU
+    FROM KUK1 A
+         LEFT JOIN KUK2 B
+              ON  A.NAME = B.NAME
+              AND A.KEY < 150;
+QUIT;
+
+*********************************************;
+* 오른쪽 외부 결합;
+*********************************************;
+PROC SQL;
+  CREATE TABLE RIGHT1 AS
+    SELECT B.NAME,
+           A.KEY,B.JUMSU
+    FROM   KUK1 A
+           RIGHT JOIN KUK2 B
+                 ON A.NAME = B.NAME;
+QUIT;
+
+DATA RIGHT2;
+ MERGE KUK1(IN=A) KUK2(IN=B);
+     BY NAME;
+     IF B;
+RUN;
+
+*********************************************;
+* 5. 전체 외부 조인(Full Join);
+*********************************************;
+* 5.2 PROC SQL과 데이터 스텝;
+
+* KUK1 T과 KUK2 T에 대하여 LEFT JOIN과 RIGHT JOIN을 수행
+* 단, KUK1을 기준으로 수행하였기 때문에 KUK1 T의 NAME을 기준이 되어,;
+* KUK2 T의 NAME변수의 전홍석은 NULL .;
+
+PROC SQL;
+  CREATE TABLE FULL1 AS
+    SELECT A.NAME,A.KEY,B.JUMSU
+    FROM   KUK1 A 
+           FULL JOIN KUK2 B
+                ON A.NAME = B.NAME;
+QUIT; 
+
+
+*********************************************;
+* FULL 결합(COALESCE 함수);
+*********************************************;
+PROC SQL;
+  CREATE TABLE FULL3 AS
+    SELECT COALESCE(A.NAME,B.NAME) AS NAME,
+           A.KEY,B.JUMSU
+    FROM   KUK1 A 
+           FULL JOIN KUK2 B
+                ON A.NAME = B.NAME;
+QUIT; 
+
+* 데이터 스텝;
+DATA FULL4;
+ MERGE KUK1(IN=A) KUK2(IN=B);
+     BY NAME;
+RUN; 

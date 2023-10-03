@@ -1,0 +1,188 @@
+/*4.3 repair데이터를 입력한다*/
+data repair;
+input units min;
+cards;
+1 	23 
+2 	29 
+3 	49 
+4 	64 
+4 	74 
+5 	87 
+6 	96 
+6 	97 
+7 	109 
+8 	119 
+9 	149 
+9 	145 
+10 	154
+10 	166
+11 	162
+11 	174
+12 	180
+12 	176
+14 	179
+16 	193
+17 	193
+18 	195
+18 	198
+20 	205
+;
+run;
+
+/* (a) */
+/*부품의 수(독립변수)에 따른 수리시간(반응변수)의 변화를 선형회귀모형을 세운다.*/
+proc reg data=repair;
+model min = units;
+quit;
+/*실행결과 모수의 추정값은 min=37.21273, units=9.9695 이다. 즉, 부품의 수 units이 한 단위 증가할 때 수리시간 min은
+9.9695만큼 증가한다. 또한 H0 : b1=0 vs H1: b1<>0 을 유의수준 0.05에서 검정하면 주어진 p-value가 0.0001로 유의수준 0.05보다 작으므로
+H0기각 할 수있다. 즉, b1는 상관이 없다고 말할 수 없다.
+마지막으로 R-sqare 0.8966 이므로 회귀식에 의해 설명되는 y변수는 89.66%만큼을 설명할 수 있다.*/
+
+/* (b) */
+/*통계량 출력*/
+proc reg data= repair;
+	model min = units  /influence ;
+	output out=repair1
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+/*실행 결과*/
+/*Cook's D값이 1,2,22,24번 관측치가 다른 관측치에 비해서 유난히 크다. => influential point*/
+/*정규성 확인*/
+proc kde data=repair1 out=ex; 
+  var ti;
+run;
+proc sort data=ex;
+  by ti;
+run;
+goptions reset=all;
+symbol1 c=blue i=join v=none height=1;
+proc gplot data=ex;
+  plot density*ti = 1;
+run; quit;
+/*실행결과 정규성을 따른다*/
+
+
+/*등분산성, 독립성확인하기*/
+/*먼저 관측치 번호를 할당*/
+data repair2 ;                 
+	SET repair1 ;
+    	id = _N_ ;  
+RUN; 
+proc plot data=repair2 ;   
+	plot ti * id      /vpos=30 hpos=120 ;  
+    plot ti * units     /vpos=30 hpos=120 ;   
+    plot ti * yhat  /vpos=30 hpos=120 ;  
+run;         
+/*또는 proc insight 문으로 적합하면 확인가능*/
+proc insight data=repair2;
+run;
+/*따라서 id와 ei의 산점도를 보면 표준화잔차와 예측변수의 선형성가정을 위반함을 알수있으며 독립성을 위반한다.*/       
+                                                                           
+
+/*4.12 데이터입력*/
+data exercise;
+input Y  	X1 	X2 	X3  	X4 	X5   	X6 ;
+cards;
+443 	49 	79 	76 	8 	15 	205 
+290 	27 	70 	31 	6 	6 	129 
+676 	115 	92 	130 	0 	9 	339 
+536 	92 	62 	92 	5 	8 	247 
+481 	67 	42 	94 	16 	3 	202 
+296 	31 	54 	34 	14 	11 	119 
+453 	105 	60 	47 	5 	10 	212 
+617 	114 	85 	84 	17 	20 	285 
+514 	98 	72 	71 	12 	-1 	242 
+400 	15 	59 	99 	15 	11 	174 
+473 	62 	62 	81 	9 	1 	207 
+157 	25 	11 	7 	9 	9 	45 
+440 	45 	65 	84 	19 	13 	195 
+480 	92 	75 	63 	9 	20 	232 
+316 	27 	26 	82 	4 	17 	134 
+530 	111 	52 	93 	11 	13 	256 
+610 	78 	102 	84 	5 	7 	266 
+617 	106 	87 	82 	18 	7 	276 
+600 	97 	98 	71 	12 	8 	266 
+480 	67 	65 	62 	13 	12 	196 
+279 	38 	26 	44 	10 	8 	110 
+446 	56 	32 	99 	16 	8 	188 
+450 	54 	100 	50 	11 	15 	205 
+335 	53 	55 	60 	8 	0 	170 
+459 	61 	53 	79 	6 	5 	193 
+630 	60 	108 	104 	17 	8 	273 
+483 	83 	78 	71 	11 	8 	233 
+617 	74 	125 	66 	16 	4 	265 
+605 	89 	121 	71 	8 	8 	283 
+388 	64 	30 	81 	10 	10 	176 
+351 	34 	44 	65 	7 	9 	143 
+366 	71 	34 	56 	8 	9 	162 
+493 	88 	30 	87 	13 	0 	207 
+648 	112 	105 	123 	5 	12 	340 
+449 	57 	69 	72 	5 	4 	200 
+340 	61 	35 	55 	13 	0 	152 
+292 	29 	45 	47 	13 	13 	123 
+688 	82 	105 	81 	20 	9 	268 
+408 	80 	55 	61 	11 	1 	197 
+461 	82 	88 	54 	14 	7 	225 
+;
+run;
+
+
+
+/*통계량확인*/
+proc reg data= exercise;
+	model y = x1 x2 x3 x4 x5 x6  /influence ;
+	output out=exercise1
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit; 
+
+proc reg data= exercise;
+	model y = x1 x2 x3 x4 x5 x6  /vif ;
+quit; 
+
+data exercise2 ;                 
+	SET exercise1 ;
+    	id = _N_ ;  
+RUN; 
+
+proc plot data=exercise2 ;   
+	plot  hii * id /vpos=30 hpos=120 ;                    /*지레값(leverage value)의 인덱스 플롯*/
+  	plot  cooki * id /vpos=30 hpos=120 ;               /*Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id /vpos=30 hpos=120 ;                /*DFITS값의 인덱스 플롯*/
+run;
+
+proc insight data=exercise2;
+run;
+
+data exercise3 ;
+	set exercise2;
+	di = (ei/sqrt(26813)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+
+proc insight data=exercise3;
+run;
+
+/*실행결과 관측치 3,8,15번이 잠재성변수, 38번이 잔차가 큰 변수*/
+
+/*실행결과 해석하기*/
+/*(a)*/
+/* /vif를 실행시켰을 때, 다중공정성의 크기가 x1 x2 x3 x6이 10보다 훨씬 크기때문에 최소제곱의 가정이 위반된다*/
+
+/*(b)*/
+/*각 관측치에 대한 ri, Ci, DFITSi, Hi 값은 exercise3데이타셋에서 확인할 수 있다.*/
+
+
+
+
+/*(c)*/
+/*proc insight문을 통해서 각각에대한 산점도를 그려본다, ri와 DFITSi는 등분산성을 위반됨을 알 수있다.*
+ 
+/*또한, 전체에 대해 potential-residual plot을 출력시에, 지렛점, 특이값, 영향력 있는 관측점을 구할 수 있다.*/
+
+ 
+
+/*(d)*/
+/*위의 (c) 에서 그린 potiential-residual plot을 보면 34,35번 관측치가 outlier, 3,8,16번 관측치가 high leverge 임을 알 수 있다*

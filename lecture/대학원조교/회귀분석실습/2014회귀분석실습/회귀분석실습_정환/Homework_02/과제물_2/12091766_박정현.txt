@@ -1,0 +1,219 @@
+/*연습문제 4.3*/
+data computer;
+input Units 	Minutes;
+cards;
+1 	23 
+2 	29 
+3 	49 
+4 	64 
+4 	74 
+5 	87 
+6 	96 
+6 	97 
+7 	109 
+8 	119 
+9 	149 
+9 	145 
+10 	154
+10 	166
+11 	162
+11 	174
+12 	180
+12 	176
+14 	179
+16 	193
+17 	193
+18 	195
+18 	198
+20 	205
+;
+run;
+
+proc reg data = computer;
+model minutes = units;
+quit;
+
+/*(A) minutes = beta0 + beta1*units  회귀 모형 적합
+H0 : beta1 = 0 , H1: beta1 is not 0
+P값이 기각 한다. units 유의하다.*/
+
+
+
+proc reg data=computer;
+model minutes = units /r influence;
+output compuer_out = temp_1;  
+quit;
+/* 통계량 모두 출력함. */
+
+
+proc reg data=computer;
+	model minutes = units  /influence ;
+	output out=computer_re
+	p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+data computer_re1;                 
+	SET computer_re;
+    	id = _N_ ;  
+run; 
+
+/*insight 를 그리기 위해 이러한 값들을 계산해서 데이터를 저장한다.*/
+
+proc insight data = computer_re1;
+run;
+
+/*minutes 와 units 의
+산점도를 그려보면 부품의수에 따라 수리시간이 증가하는 경향이 있다고 한 눈에 볼수있다. -> 선형성을 가지고 있다.
+*/
+
+
+
+proc kde data=computer_re1 out=density;
+  var ti;
+run;
+proc sort data=density;
+  by ti;
+run;
+proc gplot data=density;
+  plot density*ti = 1;
+run; 
+quit;
+/*(b)*/
+/* density 와 residual의 그래프를 보면 정규분포를 따른다.*/
+/*정규성 성립한다.*/
+                                            
+proc insight data=computer_re1; 
+run; 
+
+/*표준화잔차(ri)와 x와의 관계 산점도를 보면 , 위로 볼록한 형태이다. X에대한 잔차끼리  어떠한 관계가 있다고 판단할수있다.
+이는 등분산성이 위배 된다.*/
+/*ri를 차례로 나열 했을때 , 앞뒤 표준화 잔차들과 곡선 관계가 보여 , 
+ 독립성보여 위배된다*/
+
+
+
+/*연습문제 4.12*/
+
+data ex;
+input y x1 x2 x3 x4 x5 x6;
+cards;
+443 	49 	79 	76 	8 	15 	205 
+290 	27 	70 	31 	6 	6 	129 
+676 	115 	92 	130 	0 	9 	339 
+536 	92 	62 	92 	5 	8 	247 
+481 	67 	42 	94 	16 	3 	202 
+296 	31 	54 	34 	14 	11 	119 
+453 	105 	60 	47 	5 	10 	212 
+617 	114 	85 	84 	17 	20 	285 
+514 	98 	72 	71 	12 	-1 	242 
+400 	15 	59 	99 	15 	11 	174 
+473 	62 	62 	81 	9 	1 	207 
+157 	25 	11 	7 	9 	9 	45 
+440 	45 	65 	84 	19 	13 	195 
+480 	92 	75 	63 	9 	20 	232 
+316 	27 	26 	82 	4 	17 	134 
+530 	111 	52 	93 	11 	13 	256 
+610 	78 	102 	84 	5 	7 	266 
+617 	106 	87 	82 	18 	7 	276 
+600 	97 	98 	71 	12 	8 	266 
+480 	67 	65 	62 	13 	12 	196 
+279 	38 	26 	44 	10 	8 	110 
+446 	56 	32 	99 	16 	8 	188 
+450 	54 	100 	50 	11 	15 	205 
+335 	53 	55 	60 	8 	0 	170 
+459 	61 	53 	79 	6 	5 	193 
+630 	60 	108 	104 	17 	8 	273 
+483 	83 	78 	71 	11 	8 	233 
+617 	74 	125 	66 	16 	4 	265 
+605 	89 	121 	71 	8 	8 	283 
+388 	64 	30 	81 	10 	10 	176 
+351 	34 	44 	65 	7 	9 	143 
+366 	71 	34 	56 	8 	9 	162 
+493 	88 	30 	87 	13 	0 	207 
+648 	112 	105 	123 	5 	12 	340 
+449 	57 	69 	72 	5 	4 	200 
+340 	61 	35 	55 	13 	0 	152 
+292 	29 	45 	47 	13 	13 	123 
+688 	82 	105 	81 	20 	9 	268 
+408 	80 	55 	61 	11 	1 	197 
+461 	82 	88 	54 	14 	7 	225 
+;
+run;
+
+proc reg data = ex;
+model y =x1 x2 x3 x4 x5 x6 ;
+quit;
+
+
+
+proc reg data=ex;
+	model y = x1-x6 / vif; /* 설명변수들 사이의 다중공선성(multicollinearity) 탐지 */
+quit;
+/* VIF > 10일 때, 다중공선성이 존재한다고 판단한다.
+variance inflation값이 x1,x2, x3, x6 >10이므로 다중공선성에 적합한것으로 판단된다.*/
+/*(a)
+x4,x5 에 대해서 최소제곱 가정이 위반된다고 볼수 있다.*/
+
+proc kde data=ex_re1 out=density1;
+  var ti;
+run;
+proc sort data=density1;
+  by ti;
+run;
+proc gplot data=density1;
+  plot (density)*ti = 1;
+run; 
+quit;
+/*그래프가 정규 분포 형태로 그려지며 , 정규성은 만족한다.*/
+
+
+proc reg data=ex;
+	model y = x1 x2 x3 x4 x5 x6 /influence ;
+	output out=ex_re
+	p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+data ex_re1 ;                 
+	SET ex_re ;
+    	id = _N_ ;  
+RUN; 
+
+proc insight data=ex_re1; 
+run; 
+
+/*ri 와 id 로 산점도를 그렸을때 , 누워진 깔때기 모양으로 형성 되는 그림을 볼수 있다(이분산성). 독립성이 만족 하지 않는다. */
+/*ri 와 x1-x6로 산점도를 그렸을때 , 표 전체에 고루 잘 퍼져 있으니 , 등분산성에는 만족 하고 있다고 할 수 있다.*/
+
+
+
+
+proc plot data=ex_re1 ;   
+	plot  hii * id /vpos=30 hpos=120 ;                    /*지레값(leverage value)의 인덱스 플롯*/
+  	plot  cooki * id /vpos=30 hpos=120 ;               /*Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id /vpos=30 hpos=120 ;                /*DFITS값의 인덱스 플롯*/
+run;
+
+
+data ex_re2;
+	set ex_re1;
+	di = (ei/sqrt(26813)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+/*(b) 위 ex_re2  에 저장 되어 있음*/
+
+
+proc plot data= ex_re2 ;   
+	plot  hadi * id /vpos=30 hpos=120 ;                                                 /*hadi의 영향력 측도의 인덱스 플롯*/
+  	plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;
+/*(c) 각각 인텍스플롯과 잠재성-잔차 플롯을 작성 하는 코드다.*/
+
+
+proc insight data=ex_re2;
+run;
+/*(d)  그래프에서의 비정상적인 관측개체를 확인해보면 38번 관측치(outlier), [3,5,15]번 관측치=(high laverage), 
+[34,38]번 관측치(outlier&high laverage&influential point&cookd&hadi)정도가 비정상적으로 관측된다.  */
+
+
+

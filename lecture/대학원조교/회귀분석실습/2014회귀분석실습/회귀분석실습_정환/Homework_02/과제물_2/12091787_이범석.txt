@@ -1,0 +1,167 @@
+/*4.3*/
+data ex4;
+	input Units Minutes;
+cards;
+1 23 
+2 29 
+3 49 
+4 64 
+4 74 
+5 87 
+6 96 
+6 97 
+7 109
+8 119
+9 149
+9 145
+10 154
+10 166
+11 162
+11 174
+12 180
+12 176
+14 179
+16 193
+17 193
+18 195
+18 198
+20 205
+;
+
+proc reg data=ex4;
+model minutes=units;
+run;
+
+/*(a) minutes과 units 을 관계시키는 위와 같은 프로세스를 이용해 선형회귀모형을 적합하였다.*/
+
+proc insight data= ex4;
+run;
+
+/*(b) proc insight를 통해서 적합한지 분석하여 표준화잔차와 예측변수의 산점도를 확인해보면 비선형성을 나타내는 패턴을 갖고 있다. 
+		즉, 선형성 가정을 위반한다*/
+
+proc reg data=ex4;
+model minutes=units  /influence ;
+	output out=outex4
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+proc kde data=outex4 out=density; 
+  var ti;
+run;
+proc sort data=density;
+  by ti;
+run;
+goptions reset=all;
+symbol1 c=blue i=join v=none height=1;
+proc gplot data=density;
+  plot density*ti = 1;
+run; quit;
+
+data ex4_1;
+ set outex4;
+ id=_N_;
+ run;
+
+proc plot data=ex4_1 ;   
+	plot  hii * id /vpos=30 hpos=120 ;                    /*지레값(leverage value)의 인덱스 플롯*/
+  	plot  cooki * id /vpos=30 hpos=120 ;               /*Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id /vpos=30 hpos=120 ;                /*DFITS값의 인덱스 플롯*/
+run;
+
+/*위 프로세스 결과 정규성 가정에 만족한다.*/
+
+
+    --- 독립성 위배에 대한 멘트가.. ???
+
+
+/*4.12*/
+
+data ex12;
+	input y x1-x6;
+	cards;
+443 	49 	79 	76 	8 	15 	205 
+290 	27 	70 	31 	6 	6 	129 
+676 	115 	92 	130 	0 	9 	339 
+536 	92 	62 	92 	5 	8 	247 
+481 	67 	42 	94 	16 	3 	202 
+296 	31 	54 	34 	14 	11 	119 
+453 	105 	60 	47 	5 	10 	212 
+617 	114 	85 	84 	17 	20 	285 
+514 	98 	72 	71 	12 	-1 	242 
+400 	15 	59 	99 	15 	11 	174 
+473 	62 	62 	81 	9 	1 	207 
+157 	25 	11 	7 	9 	9 	45 
+440 	45 	65 	84 	19 	13 	195 
+480 	92 	75 	63 	9 	20 	232 
+316 	27 	26 	82 	4 	17 	134 
+530 	111 	52 	93 	11 	13 	256 
+610 	78 	102 	84 	5 	7 	266 
+617 	106 	87 	82 	18 	7 	276 
+600 	97 	98 	71 	12 	8 	266 
+480 	67 	65 	62 	13 	12 	196 
+279 	38 	26 	44 	10 	8 	110 
+446 	56 	32 	99 	16 	8 	188 
+450 	54 	100 	50 	11 	15 	205 
+335 	53 	55 	60 	8 	0 	170 
+459 	61 	53 	79 	6 	5 	193 
+630 	60 	108 	104 	17 	8 	273 
+483 	83 	78 	71 	11 	8 	233 
+617 	74 	125 	66 	16 	4 	265 
+605 	89 	121 	71 	8 	8 	283 
+388 	64 	30 	81 	10 	10 	176 
+351 	34 	44 	65 	7 	9 	143 
+366 	71 	34 	56 	8 	9 	162 
+493 	88 	30 	87 	13 	0 	207 
+648 	112 	105 	123 	5 	12 	340 
+449 	57 	69 	72 	5 	4 	200 
+340 	61 	35 	55 	13 	0 	152 
+292 	29 	45 	47 	13 	13 	123 
+688 	82 	105 	81 	20 	9 	268 
+408 	80 	55 	61 	11 	1 	197 
+461 	82 	88 	54 	14 	7 	225 
+;
+
+proc reg data=ex12;
+model y = x1-x6;
+run;
+proc reg data=ex12;
+model y= x1-x6  /influence vif;
+quit;
+/*(a) Variance Inflation의 값을 살펴보면 x1 x2 x3 x6가 백의자리 수가 넘는 큰 수가 나온다. 
+그러므로 공선성에 위반된다고 할 수 있다.*/                                                      --- 공선성이 있는 것 자체가 큰 문제인 것이다. !!!!
+
+proc reg data=ex12;
+model y= x1-x6  /influence ;
+	output out=outex12
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+data ex12_1;
+ set outex12;
+ id=_N_;
+ run;
+
+proc plot data=ex12_1 ;   
+	plot  hii * id /vpos=30 hpos=120 ;                    /*지레값(leverage value)의 인덱스 플롯*/
+  	plot  cooki * id /vpos=30 hpos=120 ;               /*Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id /vpos=30 hpos=120 ;                /*DFITS값의 인덱스 플롯*/
+run;
+
+data ex12_2 ;
+	set ex12_1 ;
+	di = (ei/sqrt(26813)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+proc plot data= ex12_2 ;   
+	plot  hadi * id /vpos=30 hpos=120 ;                                                 /*hadi의 영향력 측도의 인덱스 플롯*/
+  	plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;
+/*(b) 위 ex12_2 데이타 셋에 계산된 값이 있다.*/
+/*(c) 각각의 인덱스 플롯과 잠재성 잔차플롯을 위와같은 프로세스로 작성할 수 있다.*/
+
+proc insight data=ex12_2;
+run;
+/*(d) 위 의 프로세스를 돌려서 그래프에서의 비정상적인 관측개체를 확인해보면
+38번 관측치(outlier), 12번 관측치(outlier & high laverage& influential point), 
+34번 관측치(outlier&high laverage&influential point), 17번 관측치(outlier) 정도가 비정상적으로 관측된다.*/  
+

@@ -1,0 +1,54 @@
+data smoke;
+infile "D:\smoke.txt" expandtabs firstobs=2;
+input Age HS Income Black Female Price Sales;
+run; 
+/* 담배소비량 데이터셋 입력 */
+proc reg data=smoke;
+model Sales=Age HS Income Black Female Price;
+quit;
+proc reg data=smoke;
+model Sales=Age HS Income Black Price;
+quit;
+proc reg data=smoke;
+model Sales=Age HS Income Black Female Price;
+test Female=0;
+quit;
+/* (a) H0 : Female=0 으로 가설을 설정하고 검정하였을때 p-value가 0.8507 이고 유의수준 0.05에서  H0을 기각하지 못한다.  Female이 필요하다고 말할 수 없다. */
+proc reg data=smoke;
+model Sales=Age HS Income Black Female Price;
+quit;
+proc reg data=smoke;
+model Sales=Age Income Black Price;
+quit;
+proc reg data=smoke;
+model Sales=Age HS Income Black Female Price;  
+test Female=HS=0;
+quit;
+/* (b) H0 : Female=HS=0 으로 가설을 설정하고 검정을 하였을때 p-value가 0.9789 이고 유의수준 0.05에서  H0을 기각하지 못한다. Female과 HS가 필요하다고 말할 수 없다. */
+proc reg data=smoke;
+model Sales=Age HS Income Black Female Price/i;
+quit;
+data t-value;
+alpha=0.05; df=50-6-1;
+t=tinv(1-alpha/2,df);
+run; 
+/* t-value 값 계산 */
+/* (c) income의 추정치 0.01895 이며 표준오차 0.01022  이고 신뢰구간 0.01895 ±  t(0.025, 51-7)*(0.01022) */
+proc reg data=smoke;
+model Sales=Age HS Income Black Female Price;
+quit;
+proc reg data=smoke;
+model Sales=Age HS Black Female Price;
+quit;
+/* (d) Income을 제거하였을때 R-Squar가 0.3208 에서 0.2678로 줄어든 것을 볼 수 있다. R-Squar를 %로 계산하여 32.08% 에서 26.78%로 변화했다고 말할 수 있으므로 회귀식으로 설명되는 sales의 변이는 5.3%이다. */          /* <--- ??? */
+proc reg data=smoke;
+model Sales=Age HS Income Black Female Price;
+quit;
+proc reg data=smoke;
+model Sales=Age Income Price;
+quit;
+/* (e) Income을 제거하였을때 R-Squar가 0.3208 에서 0.3032로 줄어든 것을 볼 수 있다. R-Squar를 %로 계산하여 32.08% 에서 30.32%로 변화했다고 말할 수 있으므로  Price, Age, Income에 의한 회귀식에 Sales의 변이는 1.67%이다. */          /* <--- ??? */
+proc reg data=smoke;
+model Sales=Income;
+quit;
+/* (f) Income만 남겼을때  R-Squar가 0.1063 이므로 Income에 의하여 설명되는 부분은 10.63%라고 할 수 있다. Income에 의한 회귀식에 Sales의 변이는 10.63%이다. */  /* <--- ??? */

@@ -1,0 +1,103 @@
+/*연습문제 4.3*/
+
+data hw;
+infile "D:\computer.txt" expandtabs firstobs=2 ;
+input x y;
+run;
+
+proc reg data=hw ;
+	model y =x ;
+quit ;
+
+/* (a). 부픔의 수를 x로 놓고, 수리시간을 y로 놓은 선형회귀모형 적합식은 다음과 같다. 
+        yhat = 37.21273 + 9.96950x */
+
+proc reg data=hw ;
+	model y = x / r ;
+	output out=temp_01 
+		p=yhat	Residual=ei  Student=ri  Cookd=Ci;
+quit;
+
+proc reg data=hw ;
+	model y = x /influence ;
+	output out=temp_02
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+proc reg data=hw ;
+	model y = x / r influence vif ;
+	ods output Outputstatistics = temp_all; 
+quit;
+
+/*관측치 번호 할당*/
+data temp_03 ;                 
+	SET temp_02 ;
+    	id = _N_ ;  
+RUN; 
+
+proc insight data=temp_03; 
+run; 
+
+
+/* (b). 표준적인 회귀의 가정들을 검토 
+        선형성에 대한 가정과 정규성,등분산성, 독립성에 대한 가정들을 검토해 보았다. 
+    1. 선형성 : x와  ti의 산점도를 보니 점들이 랜덤하게 흩어져 있지 않고, 약간 곡선이다. 즉, 비선형성이 나타난다. 이는 선형성의 가정에 위배된다.
+    2. 등분산성 : x와  ti의 산점도를 보니 이분산성을 나타내는 패턴은 아니었다 따라서 등분산성은 위배아닌거 같다.
+    3. 독립성 : id와 ti의 산점도를 보니 점들이 랜덤하게 흩어져 있지않고 곡선의 관계가 보인다. 이는 독립성에 위배한다고 할 수 있다.
+                그러나, 관측개체의 취해진 순서에 큰 의미가 없으므로 이 플롯은 필요하지 않다. */     ----------- ?????
+                                                                                            
+/*정규성*/
+
+proc univariate data=temp_02 normal plot;    
+	VAR ti ;
+	run;
+
+/* (b). 4. 정규성 : (표준화)잔차 정규확률플롯을 보니 정규성에 위배되지 않았다 */
+
+
+/* 연습문제 4.12 */
+
+data work;
+infile "D:\data.txt" expandtabs firstobs=2;
+input y x1-x6;
+run;
+
+
+proc reg data=work ;
+    model y = x1-x6 /influence ;
+    output out=temp_02
+        p=yhat  Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+/* (b). ri,ci,DFITSi 계산 */
+
+
+data temp_04 ;
+	set temp_02 ;
+	di = (ei/sqrt(2.59540)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+/* (b). Hi 계산 */
+
+proc insight data=temp_02;
+run;
+/*  (a). 산점도 분석결과  최소제곱의 가정이 위반되는 데이터는 없다. */
+
+/* 관측치 번호 할당 */
+data temp_01 ;                 
+	SET temp_04 ;
+    	id = _N_ ;  
+RUN;
+
+proc insight data=temp_01;
+run; 
+/* (c). ri, Ci, DFITSi, Hi 의 인덱스 플롯 , 잠재성-잔차플롯
+         산점도를 통해 분석하고자하는 항목들을 넣어 확인하면 된다.  */
+
+/* (d). ri, Ci, DFIRSi의  인덱스 플롯을 살펴보았더니 34번과 38번의 관측치가 이상하다는 것을 발견하였다.
+  Hi의 인덱스 플롯을 살펴보니 3번과 8번 18번의 관측치가 이상하다는 걸 발견하였다. 
+  잠재성-잔차플롯을 살펴보니  34번과 38번의 관측치는 레버리지는 특이한 점이 없었고 표준화잔차의 절대값이 굉장치 크므로 이 두 관측치는 outlier이다. 
+  3번과 8번의 관측치는 표준화잔차의 절대값은 특이한 점이 없었으나 레버리지가 굉장히 큰 것으로 보아 high leverage point이다. 
+  18번의 관측치는 Hi의 인덱스 플롯에서 이상하다고 느꼇으나 잠재성-잔차 플롯을 살펴보니 큰 이상은 없는것 같다.*/ 
+ 

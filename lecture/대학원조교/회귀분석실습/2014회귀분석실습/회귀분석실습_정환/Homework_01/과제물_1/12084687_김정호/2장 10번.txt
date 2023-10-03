@@ -1,0 +1,63 @@
+data h&w;
+infile "D:\h&w.txt";
+input husband wife;
+run; 
+/* 데이터셋 입력 */
+proc reg data=h&w;
+model husband=wife;
+run;
+/* cm단위의 회귀분석 */
+proc corr data=h&w cov;
+var husband;
+with wife;
+run;
+/* cm단위의 공분산분석 */
+/* (a) 공분산 69.41293860 */
+data h&w2;
+infile "D:\h&w.txt";
+input husband 3.2 wife 4.2;
+run;
+/* cm를 m로 환산하여 데이터 입력 */
+proc reg data=h&w2;
+model husband=wife;
+run;
+/* m단위의 회귀분석 */
+proc corr data=h&w2 cov;
+var husband;
+with wife;
+run;
+/* m단위의 공분산분석 */
+/* (b) 공분산 0.0069412939
+    (c) 상관계수 0.76339
+    (d) 단위와 관련없이 상관계수는 일정 */
+data h&w3;
+infile "D:\h&w.txt";
+input husband wife;
+wife2=husband-5;
+keep husband wife2;
+run;
+/* 남자들의 키와 남자들보다 5cm작은 여자들의 데이터셋 */
+proc reg data=h&w3;
+model husband=wife2;
+run;
+/* 위 데이터셋의 회귀분석 */
+proc corr data=h&w3 cov;
+var husband;
+with wife2;
+run;
+/* 위 데이터셋의 공분산분석 */
+/* (e) 상관계수는 1이 나오게 된다 */
+proc reg data=h&w;
+model husband=wife;
+run;
+proc reg data=h&w;
+model wife=husband;
+run;
+/* (f) 결정계수의 차이가 없으므로 어느것을 반응변수로 해도 같기에 임의선택으로 남자의 키를 반응변수로 정한다. */
+proc reg data=h&w;
+model husband=wife;
+run;
+/* (g) 귀무가설 : ß1=0 검정 t-value=11.46 p-value<0.0001이므로 유의수준 0.05에서 귀무가설을 기각한다. */
+/* (h) 귀무가설 : β0=0 검정 t-value=3.17 p-value<0.0021이므로 유의수준 0.05에서 귀무가설을 기각한다. */
+/* (j) 비슷한 키를 가진 사람들끼리 결혼한다는 경향이 있다면 ß0(절편항)은 0이며 ß1(기울기)은 1에 가까워야 할 것이다. (h)문제의 가설과 검정을 쓸 수 있지만 나머지는 쓸 수 없다. (g)문제의 귀무가설은 ß1=0에서 0이 아닌 1로 바꾸어 검정하여야 쓸 수 있다. 하지만 검정을 통하여 기울기는 0이 아니며 절편항도 0이 아님을 알아냈으므로 비슷한 키끼리 결혼한다는 경향은 맞지 않는다는것을 알 수 있다. */
+/* (k) 적절한것을 찾아내었으나 비슷한 키를 가진 사람들끼리 결혼하는 경향은 맞지 않는다라는 결론을 내렸다. 그리고 데이터의 자료분석을 통하여 남자의 키에 비례하여  여자들의 키가 크다는 사실을 알 수 있다. 즉 상대적인 비슷한 키를 가진 이성끼리 결혼을 한다는 경향이 있다는것을 알 수 있다. */

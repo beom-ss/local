@@ -1,0 +1,70 @@
+
+
+  #--------------------------------------------------------------------------------------------#
+  # Using Matrix 
+  #--------------------------------------------------------------------------------------------#
+  
+  # 1. data import
+  data <- read.table('supervisor.txt',header=F, col.names=c("y","x1","x2","x3","x4","x5","x6"))
+  head(data)
+  dim(data)
+  attach(data)
+
+  # estimate of parameters
+  y
+  X <- cbind(rep(1,length(y)),x1,x2,x3,x4,x5,x6)
+  t(X)%*%X
+  t(X)%*%y
+  b <- solve(t(X)%*%X)%*%t(X)%*%y
+
+  model <- lm(y~.,data=data)
+  summary(model)
+
+  # estimate of sigma
+  yhat <- X%*%b
+  e <- y - yhat
+  SSE <- t(e)%*%e 
+  sigma2 <- SSE/(30-7)
+
+  # C matrix
+
+  C <- sqrt(solve(t(X)%*%X)*diag(7)*as.numeric(sigma2))
+
+
+  #
+  #3.14
+  ciga <-read.table("cigarette_consumption.txt", header=T)
+  head(ciga)
+  attach(ciga)
+
+  #a)
+  FM <- lm( Sales ~ Age + HS + Income + Black + Price + Female)
+  RM1 <- lm( Sales ~ Age + HS + Income + Black + Price)
+  summary(FM)
+  #H0: beta6 = 0 vs H1: not H0
+  anova(RM1,FM)
+  
+
+
+  #b)
+  RM2 <- lm( Sales ~ Age + Income + Black + Price)
+  #H0: beta2 = beta6 = 0 vs H1: not H0
+  anova(RM2,FM)
+
+
+  #c)
+  confint(RM2,level=0.95)
+  
+
+  #d)
+  RM3 <- lm( Sales ~ Age + Black + Price)
+  summary(RM3)
+
+
+  #e)
+  RM4 <- lm( Sales ~ Age + Income + Price)
+  summary(RM4)
+
+  #f)
+  RM5 <- lm( Sales ~ Income)
+  summary(RM5)

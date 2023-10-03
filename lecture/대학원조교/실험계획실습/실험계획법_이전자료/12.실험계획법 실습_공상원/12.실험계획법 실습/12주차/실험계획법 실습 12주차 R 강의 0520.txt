@@ -1,0 +1,56 @@
+
+# 2^2 design
+# (반복X)
+press<-c(1,1,2,2) # (압력)  1=100, 2=150
+temp<-c(1,2,1,2) #  (온도)  1=50, 2=100
+y<-c(9,13,14,20)
+
+press<-as.factor(press)
+temp<-as.factor(temp)
+
+model<-aov(y~press+temp)
+summary(model)
+
+par(mfrow=c(1,2))
+plot(y~temp) ; plot(y~press)
+
+interaction.plot(temp, press, y, bty="l", main="interaction plot")
+interaction.plot(press, temp, y, bty="l", main="interaction plot")
+
+#(반복O)
+press<-c(1,1,1,1,2,2,2,2) # (압력)  1=100, 2=150
+temp<-c(1,1,2,2,1,1,2,2) #  (온도)  1=50, 2=100
+y<-c(9,11,11,13,14,16,14,20)
+
+press<-as.factor(press)
+temp<-as.factor(temp)
+
+model<-aov(y~press+temp+press:temp)
+summary(model)
+
+# 2^3 design
+B<-c(1,1,1,1,2,2,2,2)
+A<-c(1,1,2,2,1,1,2,2)
+C<-c(1,2,1,2,1,2,1,2)
+y<-c(21,25,20,22,37,31,35,39)
+
+B<-as.factor(B)
+A<-as.factor(A)
+C<-as.factor(C)
+
+model<-aov(y~(B+A+C)^2)
+summary(model)
+
+# 3반복 2^3 design
+B<-c(rep(1,12),rep(2,12))
+A<-c(rep(c(1,1,1,1,1,1,2,2,2,2,2,2),2))
+C<-c(rep(c(1,1,1,2,2,2),4))
+y<-c(21,23,25,25,27,29,20,22,24,22,24,26,
+     37,38,39,31,34,37,35,37,39,39,40,41)
+
+B<-as.factor(B)
+A<-as.factor(A)
+C<-as.factor(C)
+
+model<-aov(y~B*A*C)
+summary(model)

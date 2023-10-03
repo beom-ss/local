@@ -1,0 +1,20 @@
+data data3;
+input brand $ car y;
+cards;
+B 1 14
+C 1 12
+A 1 17
+D 1 13
+D 2 11
+C 2 12
+B 2 14
+A 2 14
+A 3 13
+B 3 13
+D 3 11
+C 3 10
+C 4 9
+D 4 9
+B 4 8
+A 4 13
+;run;

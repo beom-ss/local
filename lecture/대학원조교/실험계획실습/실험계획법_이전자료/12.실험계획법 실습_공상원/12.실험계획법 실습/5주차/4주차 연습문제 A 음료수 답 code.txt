@@ -1,0 +1,29 @@
+###########################
+# 예) A 음료수 회사 정답 코드
+y<-c(5.43, 5.71, 6.22, 6.01, 5.29,
+     6.24, 6.24, 5.98, 5.66, 6.60,
+     8.79, 9.20, 7.90, 8.15, 7.55)
+display<-c(rep("text",5), rep("color",5), rep("image",5))
+sol<-cbind(display, y)
+sol2<-data.frame(sol)
+
+boxplot(y ~ display)
+
+tapply(y, display, mean)
+tapply(y, display, var)
+tapply(y, display, sd)
+
+display<-as.factor(display)
+aov1<-aov(y ~ display)
+summary(aov1)
+
+summary.lm(aov1)
+
+par(mfrow=c(2,2))
+plot(aov1)
+
+library(agricolae)
+LSD.test(aov1, "display", p.adj="none", main="Y of different groups", console=T)
+HSD.test(aov1, "display", group=T, console=T)
+scheffe.test(aov1, "display", group=T, main="Y of different groups", console=T)
+SNK.test(aov1, "display", main="Y of different groups", console=T)

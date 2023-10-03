@@ -1,0 +1,263 @@
+/*4-3*/
+
+data p116;
+infile "d:\p116.txt" expandtabs firstobs=2;
+input  x y;
+run;
+
+
+/*(a)수리시간=y 부품의 수를 x로 회귀모델 적합*/
+
+/*회귀모델적합전 탐색*/                
+proc plot data=p116  ;                         
+	plot  y*x ;
+quit ;
+/*dot plot
+산점도를 보았을때 어느정도 선형관계가 있어보이고 특별히 이상한 관측치는 안보인다.
+*/
+
+symbol1 color=pink interpol=none value=dot ;
+symbol2  color=blue interpol=rl value=none;
+proc gplot data=p116;
+plot y*x=1 y*x=2 /overlay ;
+run;
+quit;
+/*plot을 그려보면 라인에서 조금 벗어나있는 것 같은 점이 보이지만, 
+크게 벗어나있는것같지는 않고 선형성이 있는것 같다.
+*/
+
+
+proc univariate data=p116 normal plot;
+var y x;
+histogram;
+run;
+/*histogram, boxplot, 줄기 잎 그림
+그래프들을 보았을때 x변수가 어느정도 대칭을 이루는 것으로 보인다.
+*/
+
+
+proc reg data=p116;
+model y=x;
+quit;
+/*
+-회귀모형 적합
+회귀모형을 적합시켜보면 귀무가설: beta1=0 , 유의수준을  0.05로 할때 p값이 유의수준보다 작으므로
+귀무가설 기각가능, x가 유의하다고 할수 있다.
+*/
+
+
+
+/*(b)회귀가정 검토
+-선형성 가정 
+-잔차 가정 (독립성, 등분산성, 정규성)
+-변수 가정 (collinearity 문제)=>단순회귀에서는 포함 안됨
+*/
+
+
+
+proc reg data=p116;
+model y=x / influence;
+output out=p116_i
+p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+/*잔차가정을 하기위해 여러가지 통계량을 구함*/
+
+
+
+proc univariate plot data=p116_i;
+var ti;
+qqplot ti  / normal(mu=est sigma=est color=green) ;
+histogram ti /normal;
+run;
+/*
+-표준화 잔차의 정규확률 plot을 그림
+ Goodness-of-Fit Tests for Normal Distribution에 여러가지 test를 보았을때, 이 test의 귀무가설은
+'Ho: 정규분포를 따른다.' 이므로, 
+유의수준을 0.05로 할때  p값이 유의수준보다 높으므로 귀무가설채택, 
+정규분포를 따른다고 할수 있다.
+qq-plot을 보아도, 직선에 가까운것처럼  보이므로 정규성을 따르는 것처럼 보인다.
+*/
+
+data p116_i2;
+set p116_i;
+id=_n_;
+run;
+/*잔차의 등분산성 독립성을 보기위해 인덱스 부여*/
+
+
+proc plot data=p116_i2 ;                     
+	plot ti * id       ;       	/*(표준화)잔차 대 인덱스 -> 등분산성 및 독립성 체크*/
+    plot ti * x  ;         /*(표준화)잔차 대 설명변수 -> 오차와 설명변수 사이의 무상관 체크*/
+    plot ti * yhat ;      /*(표준화)잔차 대 적합값 -> 오차와 적합값 사이의 무상관 체크*/
+run; 
+
+/*
+-표준화 잔차의 인덱스 플롯을 보면 값들이 인덱스에 따라 증가하다 감소하는  경향이 있는것을 알수 있다. 
+따라서 순서에 의해 영향이 있다는 것으로, 독립성에 문제가 있다는 것을 볼수 있다.
+
+-표준화잔차 대 설명변수,적합값 플롯을 보면 위로 볼록한 곡선인 것처럼 보이는 데,
+ 이러한 플롯이 나타난다는 것은 선형성에 문제가 있다는 것을 나타낸다.
+*/ 
+proc insight data=p116_i2;
+run;
+
+
+/*4-12*/
+
+data p120;
+infile 	"d:\p120.txt" expandtabs firstobs=2;
+input y x1-x6;
+run;
+
+proc reg data=p120;
+model y=x1-x6;
+run;
+/*y에 대해서 변수 6개를 가지는 선형모형 고려
+*/
+
+proc reg data=p120;
+model y=x1;
+run;
+
+/*(a)최소제곱의 가정은 회귀분석의 표준적인 가정들이므로 ,
+-선형성 가정 
+-잔차 가정 (독립성, 등분산성, 정규성)
+-변수 가정 (collinearity 문제)
+위와 같은 가정들은 살펴보아야 한다.
+*/
+
+proc gplot data=p120 ;                         
+plot  y*x1=1 y*x1=2/ overlay ;
+plot  y*x2=1 y*x2=2/ overlay ; 
+plot  y*x3=1 y*x3=2/ overlay ;
+plot  y*x4=1 y*x4=2/ overlay ;
+plot  y*x5=1 y*x5=2/ overlay ;
+plot  y*x6=1 y*x6=2/ overlay ;
+run ; quit ;
+
+
+
+
+
+proc reg data=p120;
+model y=x1 x2 x3 x4 x5 x6 / influence;
+output out=p120_i
+p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+/*잔차가정을 하기위해 여러가지 통계량을 구함*/
+data p120_i2;
+set p120_i;
+id=_n_;
+run;
+/*잔차의 등분산성 독립성을 보기위해 인덱스 부여*/
+
+
+proc univariate plot data=p120_i normal plot;
+var ti;
+qqplot ti  / normal(mu=est sigma=est color=green) ;
+histogram ti /normal;
+run;
+/*
+-표준화 잔차의 정규확률 plot을 그림
+ Goodness-of-Fit Tests for Normal Distribution에 여러가지 test를 보았을때, 이 test의 귀무가설은
+'Ho: 정규분포를 따른다.' 이므로, 
+유의수준을 0.05로 할때  p값이 유의수준보다 높으므로 귀무가설채택, 
+정규분포를 따른다고 할수 있다.
+qq-plot을 보아도, 직선에 가까운것처럼  보이므로 정규성을 따르는 것처럼 보인다.
+*/
+
+
+proc plot data=p120_i2;   
+plot ti * id /vpos=30 hpos=120 ;   /*(표준화)잔차의 인덱스 플롯 -> 등분산성 및 독립성 체크*/ 
+plot ti * x1/vpos=30 hpos=120 ;   /*(표준화)잔차 대 설명변수1 -> 오차와 설명변수1 사이의 무상관 체크*/
+plot ti * x2/vpos=30 hpos=120 ;   /*(표준화)잔차 대 설명변수2 -> 오차와 설명변수2 사이의 무상관 체크*/
+plot ti * x3/vpos=30 hpos=120 ;  /*(표준화)잔차 대 설명변수3 -> 오차와 설명변수3 사이의 무상관 체크*/
+plot ti * x4/vpos=30 hpos=120 ;  /*(표준화)잔차 대 설명변수4 -> 오차와 설명변수4 사이의 무상관 체크*/
+plot ti * x5/vpos=30 hpos=120 ;   /*(표준화)잔차 대 설명변수5 -> 오차와 설명변수5 사이의 무상관 체크*/
+plot ti * x6/vpos=30 hpos=120 ;   /*(표준화)잔차 대 설명변수6 -> 오차와 설명변수6 사이의 무상관 체크*/
+plot ti * yhat/vpos=30 hpos=120 ;/*(표준화)잔차 대 적합값 -> 오차와 적합값 사이의 무상관 체크*/
+run; 
+/*
+-표준화 잔차대 인덱스 플롯을 보면 관측 순서에 따라서 어떤 관계가 있다고 보기 힘들다. 따라서 오차의 독립성이 있어 보인다.
+
+-표준화 잔차대 설명변수 플롯들을 보면  특별히 어떤 관계가 있다고 보기 힘들것 같다. 따라서 선형성과 등분산성을 만족하는 듯 하다.
+ 
+-표준화 잔차대 적합값의 플롯을 약간 퍼진는 것처럼 보여서 등분산성에 문제가 있어보이기도 한데, 몇몇 관측치를 빼면 크게 문제가 있어
+보이지는 않는다.
+*/
+
+proc plot data=p120;
+plot y*x1 ; 	plot y*x2 ; 	plot y*x3 ; 	plot y*x4 ;	plot y*x5 ; 	plot y*x6 ;
+quit;
+
+proc sgscatter data=p120 ;
+  matrix y x1 x2 x3 x4 x5 x6 ;
+run;
+/*
+변수들의 독립성을 보기 위해서 쌍별산점도를 그려보면 (x1,x2) (x1,x3) (x1,x6) (x3,x6) (x2,x6) 가 선형패턴을 보이고 있으므로 
+이 데이터는 변수의 독립성 가정을 만족하지 않고 있다. 
+*/
+
+
+/*
+(b)	ri, Ci, DFITSi, Hi를 계산.
+여러 통계량을 구할때  ri, Ci, DFITSi 은 구하였으므로 Hi만 계산.
+*/
+data p120_h ;
+	set p120_i2 ;
+	di = (ei/sqrt(26813)) ;	 /*회귀모형의 sse=26813 */
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+
+/*
+(c)	ri, Ci, DFITSi, Hi의 인덱스 플롯, potential-residual plot.
+*/
+
+proc plot data=p120_h;   
+plot  ri * id /vpos=30 hpos=120 ;         /*ri의 인덱스 플롯*/
+plot  cooki * id /vpos=30 hpos=120 ;  /*Cook's Distance 인덱스 플롯*/
+plot  df_fit * id /vpos=30 hpos=120 ;   /*DFITS값의 인덱스 플롯*/
+plot hadi * id /vpos=30 hpos=120;     /*hadi값의 인덱스 플롯*/
+plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;    /* potential-residual plot.*/
+run;
+
+
+
+
+/*(d)비정상적인 관측치 식별*/
+proc insight data=p120_h; 
+run;
+/*
+관측치를 보기위해 insight사용해서 ri, Ci, DFITSi, Hi의 인덱스 플롯, potential-residual plot. 을 확인
+
+potential-residual plot에서 
+      -outlier point= 38 17 24 
+      -high leverage point=	15 3 8
+      -influential point= 34
+
+ri인덱스 플롯에서 
+      -outlier point= 38 17  34 24 
+
+hii인덱스 플롯에서	(평균 hii=7/40=0.175,  임계점=0.35
+      -high leverage point=	15 8 3
+
+hadi 인덱스 플롯
+-influential point= 15 34 38  (15번의 경우 leverage가 높아 hadi에서만 나타난것 같다.)
+
+Ci인덱스 플롯
+-influential point= 38 34 
+
+DFITSi인덱스 플롯
+-influential point= 38 34
+
+결과 종합하면
+ -outlier point= 17 24 38 (34)
+  -high leverage point=	3 8 15
+  -influential point= 34, 38
+
+*/
+
+
+

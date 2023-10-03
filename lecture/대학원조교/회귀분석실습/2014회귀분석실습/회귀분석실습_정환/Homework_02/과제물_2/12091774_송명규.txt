@@ -1,0 +1,216 @@
+/*연습문제 4.3*/
+data repair;
+input no units 	minutes;
+cards;
+1 1 23 
+2 2 29 
+3 3 49 
+4 4 64 
+5 4 74 
+6 5 87 
+7 6 96 
+8 6 97 
+9 7 109 
+10 8 119 
+11 9 149 
+12 9 145 
+13 10 154
+14 10 166
+15 11 162
+16 11 174
+17 12 180
+18 12 176
+19 14 179
+20 16 193
+21 17 193
+22 18 195
+23 18 198
+24 20 205
+;
+run;
+
+proc reg data = repair;
+model minutes = units;
+quit;
+
+/*(A) minutes = B0 + B1*units  회귀 모형 적합
+H0 : B1 = 0 , H1: B1 ≠ 0
+p값이 유의수준보다 작으므로 H0를 기각한다. 따라서 B1은 유의하다*/
+
+
+
+proc reg data=repair;
+model minutes = units  /influence ;
+output out=b_repair
+p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+
+/*insight 그리기위한 위한 작업.*/
+
+proc insight data = c_repair;
+run;
+
+/*메뉴에 분석에서 산점도를 클릭하여 minutes 와 units 의 산점도를
+그리면 units에 과  minutes이 선형성을 가진다고 예상해볼수있다.
+*/
+
+
+
+proc kde data=c_repair out=density;
+  var ti;
+run;
+proc sort data=density;
+  by ti;
+run;
+proc gplot data=density;
+  plot density*ti = 1;
+run; 
+quit;
+/*(b)*/
+/* density 와 residual의 그래프를 보면 정규분포를 따른다고 볼수있다.*/
+/*정규성 성립.*/
+                                            
+proc insight data=c_repair; 
+run; 
+
+/*표준화잔차(ri)와 x의  산점도를 보면 ,볼록솟은 모양의 형태이다. 그러므로  x와 ri는  관계가 없다고 볼수없기때문에.
+등분산성에 위배된다.*/
+/*ri를 나열시 , 표준화 잔차들과 관계가 있다고볼수있다 ->, 독립성보여 위배된다*/
+
+
+
+/*연습문제 4.12*/
+
+data samp;
+input y x1 x2 x3 x4 x5 x6;
+cards;
+443 	49 	79 	76 	8 	15 	205 
+290 	27 	70 	31 	6 	6 	129 
+676 	115 	92 	130 	0 	9 	339 
+536 	92 	62 	92 	5 	8 	247 
+481 	67 	42 	94 	16 	3 	202 
+296 	31 	54 	34 	14 	11 	119 
+453 	105 	60 	47 	5 	10 	212 
+617 	114 	85 	84 	17 	20 	285 
+514 	98 	72 	71 	12 	-1 	242 
+400 	15 	59 	99 	15 	11 	174 
+473 	62 	62 	81 	9 	1 	207 
+157 	25 	11 	7 	9 	9 	45 
+440 	45 	65 	84 	19 	13 	195 
+480 	92 	75 	63 	9 	20 	232 
+316 	27 	26 	82 	4 	17 	134 
+530 	111 	52 	93 	11 	13 	256 
+610 	78 	102 	84 	5 	7 	266 
+617 	106 	87 	82 	18 	7 	276 
+600 	97 	98 	71 	12 	8 	266 
+480 	67 	65 	62 	13 	12 	196 
+279 	38 	26 	44 	10 	8 	110 
+446 	56 	32 	99 	16 	8 	188 
+450 	54 	100 	50 	11 	15 	205 
+335 	53 	55 	60 	8 	0 	170 
+459 	61 	53 	79 	6 	5 	193 
+630 	60 	108 	104 	17 	8 	273 
+483 	83 	78 	71 	11 	8 	233 
+617 	74 	125 	66 	16 	4 	265 
+605 	89 	121 	71 	8 	8 	283 
+388 	64 	30 	81 	10 	10 	176 
+351 	34 	44 	65 	7 	9 	143 
+366 	71 	34 	56 	8 	9 	162 
+493 	88 	30 	87 	13 	0 	207 
+648 	112 	105 	123 	5 	12 	340 
+449 	57 	69 	72 	5 	4 	200 
+340 	61 	35 	55 	13 	0 	152 
+292 	29 	45 	47 	13 	13 	123 
+688 	82 	105 	81 	20 	9 	268 
+408 	80 	55 	61 	11 	1 	197 
+461 	82 	88 	54 	14 	7 	225 
+
+run;
+
+proc reg data = samp;
+model y =x1 x2 x3 x4 x5 x6 ;
+quit;
+/*다중회귀모형 적합*/
+
+proc insight data=samp; 
+run; 
+
+
+proc reg data=samp;
+	model y = x1-x6 / vif; 
+quit;
+/* 변수들 사이에 다중공선성(multicollinearity)을 체크하려한다.
+    VIF가  10보다 크다. 그러므로 다중공선성이 있다판단 가능하고 variance inflation값이 x1,x2, x3, x6 >10이므로
+    다중공선성에 적합한것으로 판단해볼수 있다.*/
+
+/*(a) x4,x5 에 대해서 최소제곱 가정이 위배.*/
+
+
+proc reg data=samp;
+	model y = x1 x2 x3 x4 x5 x6 /influence ;
+	output out=b_samp
+	p=yhat Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+proc kde data=b_samp out=density1;
+var ti;
+run;
+proc sort data=density1;
+  by ti;
+run;
+proc gplot data=density1;
+  plot (density)*ti = 1;
+run; 
+quit;
+/*그래프를 보면 정규성이 있어보인다.*/
+
+
+data c_samp ;                 
+	SET b_samp ;
+    	id = _N_ ;  
+RUN; 
+
+proc insight data=c_samp; 
+run; 
+
+/*ri 와 id 로 산점도를 그려보면 , 샘플이 랜덤하게 형성되어 독립성이 있다.. */
+/*ri 와 x1-x6로 산점도를 그렸을때 , 샘플이 랜덤하게 퍼져있으므로  , 등분산성이 있다할수 있다..*/
+
+
+
+
+proc plot data=c_samp ;   
+	plot  hii * id /vpos=30 hpos=120 ;                    
+	/*지레값(leverage value)의 인덱스 플롯*/
+  	plot  cooki * id /vpos=30 hpos=120 ;               
+	/*Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id /vpos=30 hpos=120 ;               
+	/*DFITS값의 인덱스 플롯*/
+run;
+
+
+data d_samp;
+	set c_samp;
+	di = (ei/sqrt(26813)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+/*(b) d_samp에 값이 있다. */
+
+
+proc plot data= d_samp ;   
+	plot  hadi * id /vpos=30 hpos=120 ;                                                 
+	/*hadi의 영향력 측도의인덱스 플롯*/
+  	plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;
+/*(c)  인텍스플롯잠재성-잔차 플롯을 작성코드.*/
+
+
+proc insight data=d_samp;
+run;
+/*(d) 38        -> outlier
+         3,5,15  -> high laverage
+         34,38   -> outlier,high laverage,influential point,cookd,hadi정도가 비정상적으로 관측.  */
+
+

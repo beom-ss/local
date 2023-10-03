@@ -1,0 +1,170 @@
+####################################
+######### Advanced Functions #######
+####################################
+# if 문
+x<-c(T,F,T)
+y<-c(T,T,F)
+
+x&y
+x|y
+
+if(x[1]&y[1]) {
+  print("both True")
+}
+g<-c("m","f" ,"f","m")
+ifelse(g=="m",1,0)
+
+# for 문
+x<- c(1,2,3,4,5,6,7,8,9,10)
+sum<-0 
+for( i in 1:length(x)){
+  
+  sum<-sum+x[i]
+  
+}
+
+# while 문
+i<-1
+while( i<=10) {
+  i<- i+4
+}
+
+# 무한루프 while문 
+while( T) {
+  i<- i+4
+  if(i>10) {
+    break
+  }
+}
+
+# repat 문 
+repeat {
+  i<- i+4
+  if(i>10) {
+    break
+  }
+}
+
+# function
+fun1<- function( a, b) {
+  a*b
+  
+} 
+
+#함수 호출 
+fun1(10)
+# x 중 홀수의 개수 세기
+oddcount<- function(x) {
+  k<-0
+  for( n in x){
+    if(n%%2==1){
+      k<-k+1
+    }
+  }
+  return (k)
+}
+
+#함수호출
+oddcount(x)
+
+
+#New binary operators
+
+x<-rnorm(10)
+y<-rnorm(10)
+
+"%!%" <- function(x, y) { mean(c(x,y))}
+
+x%!%y
+
+####################################
+######### Avoiding Loops ###########
+####################################
+li = list("klaus","martin","georg")
+lapply(li, toupper)
+
+li = list("klaus","martin","georg")
+sapply(li, toupper)
+fct = function(x) { return(c(x, x*x, x*x*x)) }
+sapply(1:5, fct)
+
+x <- matrix(c(5,7,4,6,7,9,6,3,0,8,7,5),nrow=4,ncol=3); x
+apply(x, 1, sum)
+apply(x, 2, sum)
+
+## 시간비교 1:1000을 생성해서  sort하는 함수 
+
+test1.1<-function(){ 
+  x<-NULL 
+  for(i in 1:1000) x<-cbind(x,sort(rnorm(100))) } 
+
+test1.2<-function(){ 
+  x<-matrix(0,100,1000)
+  for(i in 1:1000) x[,i]<-sort(rnorm(100)) }
+
+test1.3<-function(){ 
+  x<-apply(matrix(rnorm(100000),100,1000),2,sort) } 
+
+##실행시간을 보여줌
+system.time(test1.1()) 
+system.time(test1.2())  
+system.time(test1.3()) 
+
+weight <- c(65.4, 55, 380, 72.2, 51, NA)
+height <- c(170, 155, NA, 173, 161, 166)
+gender <- c("M", "F","M","M","F","F")
+testDate <- c("2013/09/01", "2013/09/01", "2013/09/05", "2013/09/14", "2013/10/11", "2013/10/26")
+patients <- data.frame( weight = weight, height=height, gender=gender, testDate=testDate)
+patients.sub <- patients[ ,c("weight","height")]
+
+# 각 환자(row)별로 몸무게와 키의 평균을 구한다
+apply(patients.sub, 1, mean)
+
+# NA는 빼고 계산한다
+apply(patients.sub, 1, mean, na.rm=TRUE)
+
+# list반환
+lapply( patients.sub, mean, na.rm = TRUE )
+# vector 반환 
+sapply( patients.sub, mean, na.rm = TRUE )
+
+patients$gender
+# 성별에 따라 weugit 의 평균을 반환
+tapply(patients$weight, patients$gender, mean, na.rm=TRUE)
+
+
+####################################
+######### Debugging ################
+####################################
+f <- function(x) { r <- x - g(x);r}
+g <- function(y) { r <- y * h(y);r}
+h <- function(z) {r <- log(z);
+                  if (r < 10) 
+                    r^2 else r^3}
+f(-1)
+traceback() #여러개함수에서 에러가 났을때 어디서 난건지 알수 있다 h함수에서 에러가남
+
+
+SS <- function(mu, x) {
+  d <- x - mu
+  d2 <- d^2
+  ss <- sum(d2)
+  ss
+}
+set.seed(1) 
+x <- rnorm(100)
+SS(1, x)
+debug(SS)
+##단계단계별로 어떻게 실행이 되는지 볼 수 있다 n은 한줄 한줄 c는 끝까지 Q는 밖으로 나감
+SS(1, x)
+
+SS <- function(mu, x) { 
+  d <- x - mu
+  d2 <- d^2 
+  browser()  ##browser()까지 실행시키고 멈춤 
+  ss <- sum(d2)
+  ss }
+SS(2, x)
+
+
+

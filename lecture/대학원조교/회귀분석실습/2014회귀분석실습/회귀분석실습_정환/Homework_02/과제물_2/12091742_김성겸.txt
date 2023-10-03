@@ -1,0 +1,119 @@
+
+/*4.3*/
+data computer_repair;
+infile "D:\computer_repair.txt" firstobs=2 expandtabs;
+input unit minute;
+run;
+/* D드라이브에 저장된 데이터셋을 불러옵니다. */
+
+proc reg data=computer_repair;
+model minute=unit/r influence;
+output out=CR p=yhat rstudent=r_i;  
+run;
+/* (a) H0: beta1=0 vs H1: beta1은 0이 아니다.
+unit의 p-value값이 0.0001보다 작기때문에 유의수준 0.05에서 귀무가설을 기각하여
+beta1은 0이 아니라고 할 수 있다. 따라서 회귀식에 선형관계가 있고. 
+intercept 와 unit의 parameter estimate 값이 각각  37.21273, 9.96950 이므로
+선형 회귀 모형은 minute=37.21273+9.96950*unit 이다 */
+/* 오차의 등분산성 검정을 위하여 표준화잔차(r_i)와 적합값(y hat)만 따로 CR에 저장했습니다.*/
+
+proc print data=CR;
+run;
+
+proc plot data=CR;
+plot r_i*yhat;
+run;
+/* (b)오차의 등분산성 검정
+표준적인 가정하에서 표준화잔차와 적합값은 상관되어 있지 않아서 플롯 생성시 랜덤하게 흩어진 점들이 나와야 하지만
+종모양 같은 어떤 패턴이 보이기 때문에 오차의 등분산성에 위배된다 */
+
+proc univariate data=CR normal plot;
+	VAR r_i ;
+run;  
+/* (b) 오차의 정규성 검정 
+H0: 정규분포를 따른다 vs H1: 정규분포를 따르지 않는다.
+출력된 값 중 Shapiro-Wilk가 정규성을 판단하는 기준이 되는데
+p-value값을 보면 0.3953으로 유의수준 0.05에서 귀무가설을 기각할 수 없다.
+따라서 정규분포를 따른다고 할 수 있다. */
+
+data CR2 ;          
+	SET CR ;
+    	obs = _N_ ;  
+run ;
+/* 오차의 독립성 검정을 위해 관측치번호(obs)를 붙여주고*/
+
+proc print data=CR2;
+run;
+/* CR2에 obs 추가된 것 확인*/
+
+proc plot data=CR2 ;  
+	plot r_i * obs;
+run;                
+/* 표준화잔차와 obs간의 플롯을 생성합니다*/
+/* (b)독립성 검정
+독립성 가정하에서 점들은 0 주위의 수평띠 안에서 랜덤하게 흩어져야하는데
+생성된 플롯을 보면 그렇지 않음을 알 수 있다. 따라서 오차의 독립성에 위배된다*/
+
+
+/* 4.12 */
+data exercise;
+infile "D:\exercise.txt" expandtabs firstobs=2;
+input y x1-x6;
+run;
+/*D드라이브에 저장된 데이터셋 exercise를 불러옵니다 */
+
+proc reg data=exercise;
+model y=x1-x6/r influence vif;
+output out=ex2 p=yhat r=ei Student=ri rstudent=r_i Cookd=Ci h=Pi DFFITS=df_fit;
+run;
+/*(a) 다중공선성의 관계를 알아보기위해 vif 명령어를 입력하여 variance inflation항목을 보게 되면
+x1 은 1062.16714 , x2 는 1103.59564 , x3 는 764.39446, x4는 1.03629 , x5는 1.02331, x6는  5310.50481 이고,
+그 값이 10보다 크면 다중공선성이 있다고 판단할 수 있으므로 x1, x2, x3, x6가 다중공선성이 있다고 판단할 수 있다.*/
+
+data ex3;
+set ex2;
+obs=_N_;
+di=ei/sqrt(26813);
+HDi=((Pi/(1-Pi))+(7/(1-Pi))*((di*di)/(1-di)));
+potential=(Pi/(1-Pi));
+residual=(7/(1-Pi))*((di*di)/(1-di));
+run;
+/*ex2에 저장된 값들에 obs 값과 hadi값을 ex3에 넣는다 */
+
+proc print data=ex3;
+run;
+/* (b) exercise3에 yhat(적합값), ei(잔차), ri(표준화잔차), r_i(외적표준화잔차), 
+Ci(Cook D), Pi(pii), df_fit(DFITS), obs, HDi(Hadi), potential, residual 값을 뽑아냈다*/
+
+proc plot data=ex3;
+plot r_i*yhat; /*오차의 등분산성*/
+plot r_i*obs; /*오차의 독립성*/
+run;
+/*(a)오차의 독립성과 오차의 등분산성 검정을 위해 플롯을 생성하고 점들의 관계를 보면
+0 주위로 랜덤하게 퍼져있는 것을 확인할 수 있다. 따라서 오차에 독립성과 등분산성이 있음을 알 수 있다.*/
+
+proc univariate data=ex3 normal plot;
+var r_i;
+run;
+/*(a) 오차의 정규성 검정
+H0: 정규성을 따른다 vs H1: 정규성을 따르지 않는다
+Shapiro-Wilk의 p-value값이 0.6014이므로 유의수준 0.05에서 귀무가설을 기각하지 못한다.
+따라서 오차가 정규성을 따른다고 할 수 있다.*/
+
+proc plot data=ex3;
+plot ri*obs;
+plot Ci*obs;
+plot df_fit*obs;
+plot HDi*obs;
+plot potential*residual;
+run;
+/*(c) obs에 대해 문제에 주어진 각각의 플롯을 생성했다. */
+
+proc insight data=ex3;
+run;
+
+/*(d) 특이점을 찾기위해 insight를 실행하고,  Ci,HDi,df_fit과 obs의 플롯에서 17,24,33,34,35번이 특이점임을 확인하였고
+potential*residual 플롯을 생성하여 특이점을 살펴보면
+35번이 outlier의 경향이 있고, 3,8,15번이 high leverage의 경향이 있음을 확인했다.
+17,24,34번은 outlier와 high leverage의 경향이 둘다 조금씩 있음을 알 수 있다.*/ 
+

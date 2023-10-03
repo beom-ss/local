@@ -1,0 +1,145 @@
+data hwheight;
+infile "D:\hwheight.txt" ;
+input husband wife;
+run; /*데이터불러오기*/
+
+proc corr data=hwheight cov;
+var husband;
+with wife;
+run;
+/* (a): 공분산 = 69.41293860  (c)상관계수 =0.76339*/
+
+proc sql;
+create table hw_meter as
+select husband*0.01 as h_inch, wife*0.01 as w_inch
+from hwheight;
+quit;
+/*cm를 미터로 환산하여 새로운 테이블 hwheight_inch에 저장*/
+
+proc corr data=hw_inch cov;
+var h_inch ;
+with w_inch;
+run;
+/* (b): 공분산 =  0.0069412939  (d)상관계수 = 0.76339.*/
+/* cm와 미터로 환산시의 상관계수는 같다*/
+
+proc sql;
+create table hwmin_5 as
+select husband,husband-5 as wife_5
+from hwheight;
+quit;
+/*5cm미터 작은 키를 와이프_5에 저장해서 테이블hwmin_5을 생성 */
+
+proc corr data=hwmin_5;
+var husband;
+with wife_5;
+run;
+
+/*(e)상관계수 = 1 */
+proc plot data=hwheight;
+plot husband*wife;
+plot wife*husband;
+run;
+/*(f)산점도로 비교해본 결과 눈에 띄는 차이가 없으므로 다른방법 고려*/
+
+proc reg data=hwheight;
+model husband=wife;
+run;
+proc reg data=hwheight;
+model wife= husband;
+run;
+/*(f)R square = 0.5828로 서로 같으므로 둘중에 어느것을 반응변수로 하여도 상관없다.
+    so 임의로 남편키를 반응변수로 선택*/
+
+/*(g) H0 : B1=0 검정  ---> t-값 =11.46, p-값이 0.0001이하이므로 유의수준 0.05하에서 H0를 기각*/
+/*(h) H0 : B0=0 검정  ---> t-값 = 3.17 p-값 0.0021이하이므로 유의수준 0.05하에서 H0를 기각*/
+
+/*(j)(k)
+비슷한 사람들끼리 결혼한다는걸 검정하기위해선 남자키와 여자키의 관계를 알아보면 되는데
+그럼 위에서쓴 B1=0 인가하는 검정을 가져다쓰면 저 귀무가설을 기각을 시켰으므로 여자키와 남자키는 관계가 있다고
+생각된다. 따라서 비슷한 키의 남녀가 결혼하는 경향이 있다고 말할수 있다.
+
+
+
+data ciga;
+infile "D:\ciga.txt" expandtabs firstobs=2;
+input age HS income black female price sales;
+run; 
+/*데이터 불러와서 테이블에 저장*/
+
+proc reg data=ciga;
+model sales = age HS income black female price;
+quit;
+/*full model에 대한 회귀분석*/
+proc reg data=ciga;
+model sales = age HS income black price;
+quit;
+/*reduced model에 대한 회귀분석*/
+proc reg data=ciga ;
+	model sales = age HS income black female price ;  
+	test female=0 ;
+quit;
+/*(a) H0 : female=0 검정
+         p-값 = 0.8507이므로 유의수준 0.05에서 H0를 기각 못함 그래서 female이 필요하다고 할수없다.*/
+
+
+proc reg data=ciga;
+model sales = age HS income black female price;
+quit;
+/*full model에 대한 회귀분석*/
+proc reg data=ciga;
+model sales = age income black price;
+quit;
+/*reduced model에 대한 회귀분석*/
+proc reg data=ciga ;
+	model sales = age HS income black female price ;  
+	test female=hs=0 ;
+quit;
+/*(b) H0 : female=HS=0  검정
+         p-값 = 0.9789이므로 유의수준 0.05에서  H0을 기각못함 즉 female,HS가 필요하다고 할수 없다*/
+
+proc reg data=ciga;
+model sales = age HS income black female price/i;
+quit;
+
+data tvalue ;
+alpha=0.05 ; df=50-6-1 ;
+t=tinv(1-alpha/2,df) ;
+run ; /*t-value 값 계산*/
+/*(c) income 추정치 = 0.01895                                    */
+/*        표준오차 = 0.01022                                           */
+/*        신뢰구간 = 0.01895 ±  t(0.025, 51-7) * (0.01022)*/
+
+
+proc reg data=ciga;
+model sales = age HS income black female price;
+quit;
+/*full model에 대한 회귀분석*/
+proc reg data=ciga;
+model sales = age HS black female price;
+quit;
+/*reduced model에 대한 회귀분석*/
+
+/*(d) income 제거시에 R-Square값은  0.3208 --> 0.2678 변화.
+    0.3208-0.2678=0.053
+    따라서  sales의 변이는 5.3%이다.      <------------ ?????????           */
+
+proc reg data=ciga;
+model sales = age hs income black female price;
+quit;
+/*full model에 대한 회귀분석*/
+proc reg data=ciga;
+model sales = age income price;
+quit;
+/*reduced model에 대한 회귀분석*/
+
+/*(e) income 제거시 R-Squar값은 0.3208 --> 0.3032으로 변화
+         0.3208 - 0.3032 = 0.0167
+        price , age, income에 의해 설명되는  sales의 변이는 1.67%이다.*/   <------------ ?????????   
+
+proc reg data=ciga;
+model sales = income;
+quit;
+/*(f) income만 고려시의  R-Squar값은 0.1063 인데
+      곧 income에 의해 설명되는 sales의 변이는 10.63%이다.*/     
+

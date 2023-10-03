@@ -1,0 +1,49 @@
+
+ data <- read.csv('BOQ.csv',header=T)
+
+ head(data)
+ dim(data)
+ attach(data)
+
+ # Basic Scatterplot Matrix
+ pairs(~y+x1+x2+x3+x4+x5+x6+x7,data=data,panel=panel.smooth,main="Simple Scatterplot Matrix")
+ par(mfrow=c(2,2))
+ plot(y~x1,pch=20)
+ text(x1,y,labels=site,pos=1,cex=0.7)
+ plot(y~x3,pch=20) 
+ text(x3,y,labels=site,pos=1,cex=0.7)
+ plot(y~x4,pch=20)
+ text(x4,y,labels=site,pos=1,cex=0.7)
+ plot(y~x5,pch=20)
+ text(x5,y,labels=site,pos=1,cex=0.7)
+
+
+ 
+
+ m <- lm(y~x1+x2+x3+x4+x5+x6+x7,data=data) 
+ summary(m)
+ out <- anova(m)
+ s <- sqrt(out$M)[8]
+ student.r <- resid(m)/(s*sqrt(1-lm.influence(m)$hat))
+ data.frame(y,yhat=m$fitted,e=m$resid,student.r,hii=lm.influence(m)$hat)
+
+ #normal probability plot
+ qqnorm(y, main = "Normal Q-Q Plot",plot.it=T); qqline(y, col = 2) 
+
+ #1.
+ qqnorm(student.r, main = "Normal Q-Q Plot",plot.it=T); qqline(student.r, col=2)
+ 
+ #2.
+ plot(student.r~x1)
+ plot(student.r~x2)
+ plot(student.r~x3)
+ plot(student.r~x4)
+ plot(student.r~x5)
+ plot(student.r~x6)
+ plot(student.r~x7)
+
+ #3.
+ plot(student.r~m$fitted)
+
+ #4.
+ plot(student.r) 

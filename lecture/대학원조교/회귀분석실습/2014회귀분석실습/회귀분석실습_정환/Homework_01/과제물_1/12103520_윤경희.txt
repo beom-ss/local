@@ -1,0 +1,25 @@
+<2장>
+data height;
+infile "D:Wheight.txt";
+input hsuband wife;
+run;
+
+(a)(c)
+proc corr data=height cov;
+var husband;
+with wife;
+run;
+
+
+
+모르겠어요...............ㅠㅠ
+
+
+
+
+
+
+data cigarette
+infile "D:Wcigarette.txt";
+input y x1-x7;
+run;

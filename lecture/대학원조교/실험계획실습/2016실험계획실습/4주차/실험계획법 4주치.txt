@@ -1,0 +1,101 @@
+#2.20 
+ 
+Days<-c(108,138,124,163,124,159,106,134,115,139)
+
+# a) 
+# H0 : mu = 120 H1 : not H0 
+
+# b)
+# Test these hypotheses using alpha = 0.01
+ymean<-mean(Days)
+yvar<-var(Days)
+n<-length(Days)
+t_2.20<-(ymean-120)/(sqrt(yvar)/sqrt(n))
+qt(p = 0.01,df = n-1,lower.tail = F)
+t.test(Days,mu=120,alternative = "greater")
+# do not reject Ho
+
+# c)
+# p-value 
+pt(t_2.20,df= n-1,lower.tail = F)
+
+
+# d) 
+# confidece inter val
+low_2.20<-ymean-qt(p = 0.005,df = n-1,lower.tail = F)*sqrt(yvar)/sqrt(n)
+up_2.20<-ymean+qt(p = 0.005,df = n-1,lower.tail = F)*sqrt(yvar)/sqrt(n)
+cbind(low_2.20,up_2.20)
+
+#2.27
+cf_2.27<-c(125,200)
+ob_2.27<-c(1:6)
+count_2.27<-c(2.7,4.6,2.6,3.0,3.2,3.8,4.6,3.4,2.9,3.5,4.1,5.1)
+dat_2.27<-expand.grid(ob=ob_2.27,cf=cf_2.27)
+dat_2.27<-cbind(dat_2.27,count_2.27)
+#b)
+t.test(dat_2.27[dat_2.27$cf==125,]$count_2.27,dat_2.27[dat_2.27$cf==200,]$count_2.27,alternative = "two.sided")
+#c)
+var.test(dat_2.27[dat_2.27$cf==125,]$count_2.27,dat_2.27[dat_2.27$cf==200,]$count_2.27)
+#d)
+boxplot(dat_2.27$count_2.27~dat_2.27$cf,xlab="Flow Rate",ylab="Uniformity",main="Flow Rate vs Uniformity")
+
+#2.39
+# H0 : 2mu1=mu2 H1 : not H0
+y1_2.39<-2.69
+s1_2.39<-2.30
+n1_2.39<-43
+y2_2.39<-6.35
+s2_2.39<-4.03
+n2_2.39<-45
+
+z_2.39<-(2*y1_2.39-y2_2.39)/sqrt(4*(s1_2.39)^2/n1_2.39+(s2_2.39)^2/n2_2.39)
+qnorm(0.025,mean=0,sd=1,lower.tail = F)
+#do not reject H0
+
+
+#3.22
+ct_3.22<-as.factor(c(1,2,3))
+rt_3.22<-c(1:5)
+count_3.22<-c(9,12,10,8,15,20,21,23,17,30,6,5,8,16,7)
+dat_3.22<-expand.grid(rt=rt_3.22,ct=ct_3.22)
+dat_3.22<-cbind(dat_3.22,count_3.22)
+#a) H0 : m1=m2=m3 H1: not H0
+fit_3.22<-aov(count_3.22~ct,data=dat_3.22)
+summary(fit_3.22)
+#reject H0
+
+#b)
+fit_tuk <- TukeyHSD(x=fit_3.22, "ct", conf.level=0.99)
+
+# Notice that the results indicate that the mean of treatment 2 differs from the means of both treatments 1
+# and 3, and that the means for treatments 1 and 3 are the same. Notice also that the Fisher LSD
+# procedure (see the computer output) gives the same results.
+#c) 
+boxplot(count_3.22~ct,data=dat_3.22,xlab="Circuit Type",ylab="Response Time",main="Circuit Type vs Response Time")
+
+# 
+# The scaled-t plot agrees with part (b). In this case, the large difference between the mean of treatment
+# 2 and the other two treatments is very obvious.
+
+#d) H0: mu1-2mu2+mu3=0 H1: not H0 
+##  C1: y1-2y2+y3
+sum1<-sum(dat_3.22[dat_3.22$ct==1,]$count_3.22)
+sum2<-sum(dat_3.22[dat_3.22$ct==2,]$count_3.22)
+sum3<-sum(dat_3.22[dat_3.22$ct==3,]$count_3.22)
+c1<-sum1-2*sum2+sum3
+ssc<-c1^2/(5*6)
+f<-ssc/16.9
+
+contrasmatrix<-c(1,-2,1)
+contrasts(dat_3.22$ct)<-contrasmatrix
+summary.lm(aov(count_3.22~ct,data=dat_3.22))
+# Type 2 differs from the average of type 1 and type 3.
+
+#e) Either type 1 or type 3 as they are not different from each other and have the lowest response time
+
+
+#f) 
+par(mfrow=c(2,2))
+plot(fit_3.22)
+#The normal probability plot has some points that do not lie along the line in the upper region.
+#This may indicate potential outliers in the data

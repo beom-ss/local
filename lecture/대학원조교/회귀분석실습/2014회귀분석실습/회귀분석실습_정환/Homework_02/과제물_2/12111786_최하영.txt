@@ -1,0 +1,125 @@
+/*4.3*/
+
+data hw;
+infile "D:\abc.txt" expandtabs firstobs=2 ;
+input x y;
+run;
+
+proc reg data=work ;
+	model y =x ;
+quit ;
+
+/* a번 
+부품의 수를 x라 하고 수리시간을 y라 함
+yhat=37.21273+9.96950x */
+
+proc reg data=work ;
+	model y = x / r ;
+	output out=temp_01 
+		p=yhat	Residual=ei  Student=ri  Cookd=Ci;
+quit;
+
+proc reg data=work ;
+	model y = x /influence ;
+	output out=temp_02
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+proc reg data=work
+;
+	model y = x / r influence vif ;
+	ods output Outputstatistics = temp_all; 
+quit;
+
+/*관측치 번호 할당*/
+data temp_03 ;                 
+	SET temp_02 ;
+    	id = _N_ ;  
+RUN; 
+
+proc insight data=temp_03; 
+run; 
+/* b번                                                
+x와 ti의 산점도를 보니 비선형성이 나타난다. 선형성의 가정에 위배된다  , 등분산성은 위배아닌거 같음*/           
+/*id와 ti보니  곡선의 관계가 보임 독립성에 위배하지만, 관측개체의 취해진 순서에 큰의미가 없으므로 이는 필요하지 않다. */
+
+/*정규성*/
+
+proc kde data=temp_02 out=density; 
+  var ti;
+run;
+proc sort data=density;
+  by ti;
+run;
+goptions reset=all;
+symbol1 c=blue i=join v=none height=1;
+proc gplot data=density;
+  plot density*ti = 1;
+run; quit;
+
+/*정규성에 위배되지 않았다 */
+
+/*4.12 */
+
+proc reg data=first ;
+    model y = x1-x6 /influence ;
+    output out=temp_02
+        p=yhat  Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+data first;
+infile "D:\P120.txt" expandtabs firstobs=2;
+input y x1-x6;
+run;
+
+/*산점도를 그려서 가정에 위반되는 데이터를 찾는다*/
+
+proc reg data=first;
+model y=x1 x2 x3 x4 x5 x6/r influence;
+output out=residual_1 student=ri;
+quit;
+
+proc insight data=residual_1;
+run;
+/* 
+a번 
+산점도 분석결과  최소제곱의 가정이 위반되는 데이터는 없다.
+
+*/
+
+/*b번 ri,ci,DFITSi 구하기*/
+
+proc reg data=first ;
+	model y = x1-x6 /influence ;
+	output out=temp_02
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+/*Hi 구하기*/
+data temp_03 ;
+	set temp_02 ;
+	di = (ei/sqrt(2.59540)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+
+/* 관측치 번호 할당*/
+data temp_01 ;                 
+	SET temp_03 ;
+    	id = _N_ ;  
+RUN; 
+
+/*c번 
+index plot of ri,ci,DFITSi,Hi 는 다음과 같이 구한다 */
+proc insight data=temp_01;
+run; 
+
+/* Potential-Residual plot은 아래와 같이  구한다 .*/
+proc plot data=temp_01 ;   
+plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;  
+run;
+
+
+/*d
+index plot of ri,ci,DFITSi를 분석해보니  34번, 38번 관측치가 비정상적이었다 
+34번, 38번 관측치의 레버리지는 둘다 특이한 점은 없었고 zi의 절대값이 매우  큰것으로 보아
+34번,38번은 outlier이다 */

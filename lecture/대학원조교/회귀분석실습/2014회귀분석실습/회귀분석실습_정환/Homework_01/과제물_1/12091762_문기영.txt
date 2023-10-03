@@ -1,0 +1,137 @@
+2-10번
+
+data huswife;
+infile "D:\huswife.txt";
+input husband wife;
+run; 
+/* 데이터셋 입력*/
+proc reg data=huswife;
+model husband=wife;
+run;
+/*센치단위의 회귀분석*/
+proc corr data=huswife cov;
+var husband ;
+with wife;
+run;
+/* 센치단위의 공분산분석*/
+/* (a)의 답 공분산은 69.41293860*/
+data huswife2;
+infile "D:\huswife.txt";
+input husband 3.2  wife 4.2;
+run;
+/* 센치미터를 미터로 환산하여 데이터 입력*/
+proc reg data=huswife2;
+model husband=wife;
+run;
+/*미터단위의 회귀분석*/
+proc corr data=huswife2 cov;
+var husband;
+with wife;
+run;
+/*미터단위의 공분산분석*/
+/* (b)의 답 공분산은 0.0069412939
+    (c)의 답 상관계수는 0.76339
+    (d)센치와 미터단위와 관련없이 상관계수는 일정 */
+data huswife3;
+infile "D:\huswife.txt";
+input husband wife;
+wife2= husband-5;
+keep husband wife2;
+run;
+/*남자들의 키와 남자들보다 5센치작은 여자들의 데이터셋*/
+proc reg data=huswife3;
+model husband=wife2;
+run;
+/*위 데이터셋의 회귀분석*/
+proc corr data=huswife3 cov;
+var husband;
+with wife2;
+run;
+/*위 데이터셋의 공분산분석*/
+/*(e) 상관계수는 1이 나오게 된다*/
+proc reg data=huswife;
+model husband=wife;
+run;
+proc reg data=huswife;
+model wife=husband;
+run;
+/*(f) 결정계수의 차이가 없으므로 어느것을 반응변수로 해도 같다고 여겨지므로 임의선택으로
+남자의키를 반응변수로 정한다.*/
+proc reg data=huswife;
+model husband=wife;
+run;
+/*(g) 귀무가설: ß1=0 검정
+t-value =11.46 p-value <0.0001이므로 유의수준 0.05하에서 귀무가설을 기각한다*/
+/*(h) 귀무가설:β0=0 검정
+t-value =3.17 p-value <0.0021이므로 유의수준 0.05하에서 귀무가설을 기각한다*/
+/*(j) 비슷한 키를 가진 사람들끼리 결혼한다는 경향이 있다면ß0(절편항)은 0이며 ß1(기울기)는 1에 가까워야 할것이다.
+ (여기서 비슷한 키란 절대적인 키 즉 비슷한키를 가진 이성끼리 결혼을 한다를 뜻합니다.)
+즉 그런 경향을 검정하기 위해선 (h)문제의 가설과 검정을 쓸 수 있지만 나머지는 쓸수없다.
+(g)문제의 귀무가설은 ß1=0에서 0이아닌 1로 바꾸어 검정하여야 쓸 수 있다. 하지만 검정을 통하여 기울기는 0이 아니며 
+절편항도 0이 아님을 알아냈으므로 비슷한키끼리 결혼한다는 경향은 맞지 않는다는것을 알수있다.*/
+/*(k) 적절한것을 찾아내었으나 비슷한키를 가진 사람들끼리 결혼하는 경향은 맞지 않는다라는 결론을 내렸다
+또한 이 데이터의 자료분석을 통하여 남자의 키에 비례하여  여자들의 키가 크다는 사실을 알 수 있다.
+즉 상대적인 비슷한 키를 가진 이성끼리 결혼을 한다는 경향이 있다는것을 알수있다.(여기서 상대적으로 비슷한 키란
+남자측에서 큰키를 가진 남자와 여자측에서 큰키를 가진 여자가 결혼하는 경향이 크다라는걸 의미한다)*/
+
+3-14번
+
+data ciga;
+infile "D:\ciga.txt" expandtabs firstobs=2;
+input age hs income black female price sales;
+run; 
+/* 담배소비량 데이터셋 입력*/
+proc reg data=ciga;
+model sales = age hs income black female price;
+quit;
+proc reg data=ciga;
+model sales = age hs income black price;
+quit;
+proc reg data=ciga ;
+	model sales = age hs income black female price ;  
+	test female=0 ;
+quit;
+/*(a) H0: female=0 으로 가설을 설정하고 검정을 하였을때
+p-value가 0.8507 이고 유의수준 0.05내에서  H0을 기각하지못한다.
+즉 female이 필요하다고 말할수 없다*/
+proc reg data=ciga;
+model sales = age hs income black female price;
+quit;
+proc reg data=ciga;
+model sales = age income black price;
+quit;
+proc reg data=ciga ;
+	model sales = age hs income black female price ;  
+	test female=hs=0 ;
+quit;
+/*(b) H0: female=HS=0 으로 가설을 설정하고 검정을 하였을때
+p-value가 0.9789 이고 유의수준 0.05내에서  H0을 기각하지못한다.
+즉 female,hs가 필요하다고 말할수 없다*/
+proc reg data=ciga;
+model sales = age hs income black female price/i;
+quit;
+data tvalue ;
+alpha=0.05 ; df=50-6-1 ;
+t=tinv(1-alpha/2,df) ;
+run ; /*t-value 값 계산*/
+/*(c) income의 추정치는 0.01895 이며 표준오차는 0.01022  이고
+신뢰구간은 0.01895 ±  t(0.025, 51-7)*(0.01022)가 나오게 된다*/
+proc reg data=ciga;
+model sales = age hs income black female price;
+quit;
+proc reg data=ciga;
+model sales = age hs black female price;
+quit;
+/*(d) income을 제거하였을때 R-Squar가 0.2678 회귀식으로 설명되는 이중모형에 의해 설명되는 변이는sales의 변이는 26.78%이다.*/
+proc reg data=ciga;
+model sales = age hs income black female price;
+quit;
+proc reg data=ciga;
+model sales = age income price;
+quit;
+/*(e) income을 제거하였을때 R-Squar가 0.3032   price , age, income에 희한 회귀식에 sales의 변이는 30.32%이다.*/
+proc reg data=ciga;
+model sales = income;
+quit;
+/*(f) income만 남겼을때  R-Squar가 0.1063 이므로 income에 의하여 설명되는 부분은 
+10.63%라고 할수있다. 즉 income에 의한 회귀식에 sales의 변이는 10.63%이다.*/

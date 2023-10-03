@@ -1,0 +1,46 @@
+
+/* t통계량이 음수일 때와 양수일때를 조건문으로 받아서 계산하는 프로그램 */
+
+data t_stat ;
+
+  t0      = ( ) ;                             /* 검정통계량의 값 */
+  n_count = ( ) ;                             /* 관측치 갯수     */
+  n_reg   = ( ) ;                             /* 설명변수 갯수   */
+  alpha   = ( ) ;                             /* 유의수준        */
+  df = (n_count) - (n_regressor) - 1 ;        /* 자유도          */
+
+  /* 단측검정 */      /* 기각통계량 */                     /* p-value */
+  if t0 < 0 then ( R_t1 = tinv(  alpha, df) ) and ( p_value1 =     probt(t0, df) ) ;      
+  else           ( R_t1 = tinv(1-alpha, df) ) and ( p_value1 = 1 - probt(t0, df) ) ;
+
+  put R_t1 = ;         /* 기각통계량 출력 */       
+  put p_value1 = ;     /*    p-value 출력 */
+
+  /* 양측검정 */      /* 기각통계량 */                     /* p-value */
+  if t0 < 0 then ( R_t2 = tinv(  alpha/2, df) ) and ( p_value2 = 2*(    probt(t0, df)) ) ;      
+  else           ( R_t2 = tinv(1-alpha/2, df) ) and ( p_value2 = 2*(1 - probt(t0, df)) ) ;
+
+  put R_t2 = ;         /* 기각통계량 출력 */       
+  put p_value2 = ;     /*    p-value 출력 */
+
+run ; 
+
+
+
+data f_stat ;
+
+  f0      = ( ) ;                             /* 검정통계량의 값 */
+  n_count = ( ) ;                             /* 관측치 갯수     */
+  n_reg   = ( ) ;                             /* 설명변수 갯수   */
+  alpha   = ( ) ;                             /* 유의수준        */
+  df1     = ( ) ;                             /* 자유도 1        */
+  df2     = ( ) ;                             /* 자유도 2        */
+
+  /* 양측검정 */    
+  R_f = finv(1-alpha, df1, df2) ;  /* 기각통계량 */
+  p = 1 - probf(f0, df1, df2) ;    /* p-value */
+
+  put R_f = ;                      /* 기각통계량 출력 */       
+  put p_value = ;                  /*    p-value 출력 */
+
+run ; 

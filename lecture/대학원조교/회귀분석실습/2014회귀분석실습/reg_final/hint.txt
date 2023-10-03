@@ -1,0 +1,22 @@
+
+
+ # test4 검정통계량
+ f = t(C%*%b-d)%*%(solve(C%*%solve(t(X)%*%X)%*%t(C)))%*%(C%*%b-d)/(1*s2)    
+
+ # PRESS
+ PRESS1 <- sum((ei/(1-hii))^2 )
+
+
+ #data frame에서 조건에 맞는 obs만 보기
+ (eg)
+	data.frame a에서 x1>10 인 obs만 보기
+ 
+	a[x1>10,] 
+	
+
+
+
+
+
+
+ 

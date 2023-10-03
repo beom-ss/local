@@ -1,0 +1,174 @@
+/********************************** 이론편 **********************************/
+
+/*예제 : Supervisor Performance*/
+
+data supervisor_A  ;
+	infile "C:\Users\kuksunghee\Desktop\supervisor_A.txt" ;
+	input y x1 x2 x3 x4 x5 x6 ;
+/*	input y x1-x6 ;*/
+run;
+data supervisor_B ;
+	infile "C:\Users\kuksunghee\Desktop\supervisor_B.txt" expandtabs;
+	input y x1-x6 ;
+run;
+data supervisor_C  ;
+	infile "C:\Users\kuksunghee\Desktop\supervisor_C.txt" firstobs=2;
+	input y x1-x6 ;
+run;
+
+
+proc plot data=supervisor_A vpercent=33 hpercent=50 ; 
+	plot y*x1 ; 	plot y*x2 ; 	plot y*x3 ; 	plot y*x4 ;		plot y*x5 ; 	plot y*x6 ;
+run;
+proc corr data=supervisor_A cov ; 
+	var y x1 x2 x3 x4 x5 x6 ;
+run;
+
+
+/*3. Model fitting*/
+proc reg data=supervisor_A ;
+	model y = x1 x2 x3 x4 x5 x6 ;  /*No option*/
+quit;
+
+
+
+/*4. Confidence intervals of betas*/
+
+data tvalue_A ;
+alpha=0.05 ; df=30-6-1 ;
+t=tinv(1-alpha/2,df) ;
+run ; 
+data tvalue_B ;
+t=tinv(0.95 , 23) ;
+run ; 
+data tvalue_C ;
+t=tinv(0.95 , 23) ;
+put t=  ;
+run ; 
+
+
+
+proc reg data=supervisor_A ;
+	model y = x1-x6 / i ;  
+quit;
+
+
+
+proc reg data=supervisor_A ;
+	model y = x1 x2 ;
+quit;
+
+proc reg data=supervisor_A ;
+	model y = x1 / r ; 	output out=subset_1 r=y_x1 ;
+run;quit;
+
+proc reg data=supervisor_A ;
+	model x2 = x1 / r ; output out=subset_2 r=x2_x1;
+quit;
+
+proc sql ;
+	create table subset_3 as
+	select t1.y,  t1.x1,  t1.x2 , t1.y_x1 'y|x1' , t2.x2_x1 'y|x2'
+	from subset_1 as t1, subset_2 as t2 
+	where (t1.y=t2.y) and (t1.x1=t2.x1) and (t1.x2=t2.x2) ;
+quit; run;
+
+data subset_3;
+	merge subset_1 subset_2;
+run;
+proc reg data=subset_3 ;
+	model y_x1 = x2_x1 ;
+quit;
+proc reg data=supervisor_A ;
+	model y = x2 / r ; 	output out=subset_4 r=y_x2 ;
+run;quit;
+proc reg data=supervisor_A ;
+	model x1 = x2 / r ; output out=subset_5 r=x1_x2;
+quit;
+data subset_6;
+	merge subset_4 subset_5;
+run;
+proc reg data=subset_6;
+	model y_x2 = x1_x2 ;
+quit;
+
+proc reg data=supervisor_A;
+	model y=x1 x2/r ; output out=test1 r=y_x1x2;
+quit;
+proc sql;
+create table test as
+	select *,avg(y) as meany
+	from supervisor_A;
+quit;
+
+proc reg data=test;
+	model meany=x1 x2/r ; output out=test2 r=m_x1x2;
+quit;
+data test3;
+	merge test1 test2;
+run;
+proc reg data=test3;
+	model y_x1x2=m_x1x2;
+run;
+
+
+
+
+
+/*6. Several options of multiple linear regression*/
+
+proc reg data=supervisor_A ;
+	model y = x1-x6 / r ;  
+quit;
+proc reg data=supervisor_A ;
+	model y = x1-x6 / p; 
+quit;
+proc reg data=supervisor_A ;
+	model y = x1-x6 / clm cli ;  
+quit;
+proc reg data=supervisor_A ;
+	model y = x1-x6 / clm cli alpha=0.1; 
+quit;
+
+
+data new;
+	input x1-x6;
+	cards;
+67 53 56 65 75 43
+;
+run;
+data supervisor_A_update ;
+	set new supervisor_A ;
+run;
+proc reg data=supervisor_A_update ;
+	model y = x1-x6 / cli clm;
+run;
+
+
+proc reg data=supervisor_A_update; 
+	model y=x1-x6/cli clm;
+	output out = temp p=yhat U95M=C_upper L95M=C_lower U95=P_upper L95=P_lower;
+quit;
+proc sql;
+	create table interval as
+	select x1, x2, x3, x4, x5, x6, y, yhat, (C_upper - C_lower) as C_interval, (P_upper - P_lower) as P_interval
+	from temp;
+quit;
+
+proc reg data=supervisor_A ;
+	model y = x1-x6 / noint ;   
+quit;
+proc reg data=supervisor_A ;
+	model y = x1-x6 / influence; 
+quit;
+proc reg data=supervisor_A ;
+	model y = x1-x6 / vif; 
+quit;
+/*VIF > 10일 때, 다중공선성이 존재한다고 판단한다. 여기서는 모든 xj의 VIF_j < 10이므로 다중공선성의 문제는 없는 것으로 판단된다.*/
+
+/* 다중공선성의 문제에 대처하는 가장 간단한 방법은, 상관관계가 있는 변수들 중 일부를 제거하거나 결합하는 것이다. */
+/* 다중공선성이 있더라도, 새로운 관측치가 기존에 모형을 적합한 데이터 범위 내에 있으면, 모형의 예측력이 나쁘지 않다고 한다. */
+/*그러나 다중공선성이 존재하면, beta의 분산이 매우 큰 경향이 있어, 모형이 안정적이지 못하게 되므로 이를 시정해줘야 할 필요가 있다. */
+/* 다중공선성에 대한 잘 알려져 있는 솔루션들(주성분 회귀, 능형회귀)이 9장에서 심도깊게 다뤄질 것이다. */
+
+

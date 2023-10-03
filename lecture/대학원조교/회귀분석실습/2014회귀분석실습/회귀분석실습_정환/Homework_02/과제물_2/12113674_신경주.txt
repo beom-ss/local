@@ -1,0 +1,221 @@
+/*표 4.6*/
+
+data computer;
+infile "C:\Users\student\Desktop\computer repair.txt";
+input n u m ;
+run;
+/*4.3*/
+/* 데이터셋 입력 */
+proc reg data= computer;
+model u=m;
+run;
+/* 회귀분석 */
+proc gplot data=computer ;
+plot u*m=1 u*m=2 / overlay ;
+run ;
+/* 산점도 */
+proc corr data=computer cov;
+var u;
+with m;
+run;
+
+proc reg data=computer ;
+model u = m / r;
+output out=residual student=ri ;
+quit ;
+
+proc insight data=residual ;
+run ;
+
+proc reg data=computer ;
+model u = m/ r ;
+output out=computer2
+p=yhat Residual=ei Student=ri Cookd=Ci;
+quit;
+
+proc reg data=computer ;
+model u = m /influence ;
+output out= computer3
+p=yhat Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+proc reg data=computer;
+model u = m / r influence vif ;
+ods output Outputstatistics = cumall; /* 모든 통계량을 출력 */
+quit;
+
+proc univariate data=computer normal plot; /*(표준화)잔차 정규확률플롯*/
+VAR u ;
+QQPLOT u / NORMAL(MU=EST SIGMA=EST COLOR=RED L=1) ;
+HISTOGRAM / NORMAL(COLOR=MAROON W=4) CFILL = BLUE CFRAME = LIGR ;
+INSET MEAN STD / CFILL=BLANK FORMAT=5.2 ;
+run;
+
+data computer4 ;
+SET computer3 ;
+id = _N_ ;
+RUN;
+
+proc plot data=computer4 ;
+plot ti * id /vpos=30 hpos=120 ; /*(표준화)잔차의 인덱스 플롯 -> 등분산성 및 독립성 체크*/
+plot ti * m /vpos=30 hpos=120 ; /*(표준화)잔차 대 설명변수 -> 오차와 설명변수 사이의 무상관 체크*/
+plot ti * yhat /vpos=30 hpos=120 ; /*(표준화)잔차 대 적합값 -> 오차와 적합값 사이의 무상관 체크*/
+run;
+/* 높은 지레점(high leverage point), 영향력 있는 관측치(influential point), 특이치(outlier)에 대한 진단*/
+proc plot data=computer4 ;
+plot hii * id /vpos=30 hpos=120 ; /*지레값(leverage value)의 인덱스 플롯*/
+plot cooki * id /vpos=30 hpos=120 ; /*Cook's Distance 인덱스 플롯*/
+plot df_fit * id /vpos=30 hpos=120 ; /*DFITS값의 인덱스 플롯*/
+run;
+
+data computer5 ;
+set computer4 ;
+di = (ei/sqrt(2.59540)) ;
+potential_Fuction = hii/(1-hii) ;
+residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+hadi = potential_Fuction + residual_Function ;
+run;
+
+proc plot data=computer5 ;
+plot hadi * id /vpos=30 hpos=120 ;                                 /*hadi의 영향력 측도의 인덱스 플롯*/
+plot potential_Fuction * residual_Function /vpos=30 hpos=120 ; /*잠재성 - 잔차 플롯*/
+run;
+
+/*Hadi의 영향력 측도의 인덱스 플롯*/
+
+/*(a)*/
+/* u = -2.34275 + (0.08993)m + e */
+
+/*(b)*/
+/*
+산점도를 이용하여 모형의 형태에 대한 가정의 선형성을 볼 수 있다.
+오차의 독립성 가정은 표준화 잔차의 인덱스 플롯 그래프에서 점들이 랜덤하게 흩어져 있어야 가정이 위반되지 않는다.
+하지만 표준화 잔차의 인덱스 플롯 그래프에서 랜덤하지 않다고 보기 어렵다고 판단되므로 오차의 독립성 가정은 위반되지 않는다. --- 독립이지 않은데 ??
+표준화잔차 대 적합값의 플롯이 랜덤분포하므로 오차의 등분산성에 위반되지 않는다.
+표준화 잔차의 정규확률플롯을 보면 직선의 형태를 보인다. 따라서 오차의 정규성에 위반되지 않는다.
+*/
+
+ 
+
+/*4.12*/
+/*표 4.8*/
+data table;
+infile "C:\Users\student\Desktop\table4.8.txt";
+input n y x1 x2 x3 x4 x5 x6 ;
+run;
+
+/* 데이터셋 입력 */
+proc gplot data=table;                         
+plot  y*x1=1 y*x1=2 / overlay ;
+run; 
+
+proc gplot data=table;                         
+plot  y*x2=1 y*x2=2 / overlay ;
+run;
+
+proc reg data=table;
+model y = x1 x2 x3 x4 x5 x6;
+run;
+
+/*회귀분석 */
+proc corr data=table cov;
+var y;
+with x1 x2 x3 x4 x5 x6;
+run;
+
+/* 공분산 분석 */
+proc reg data=table ;
+model y =  x1 x2 x3 x4 x5 x6/ r ;
+output out=table2 
+p=yhat	Residual=ei  Student=ri  Cookd=Ci;
+quit;
+
+proc reg data=table;
+model y =  x1 x2 x3 x4 x5 x6  /r influence ;
+output out= table3
+p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+proc reg data=table ;
+model y = x1 x2 x3 x4 x5 x6 / r influence vif ;
+ods output Outputstatistics = regall;  /* 모든 통계량을 출력 */
+quit;
+
+proc univariate data=table3 normal plot;    /*(표준화)잔차 정규확률플롯*/
+VAR ti ;
+QQPLOT ti  / NORMAL(MU=EST SIGMA=EST COLOR=RED L=1) ;
+HISTOGRAM / NORMAL(COLOR=MAROON W=4) CFILL = BLUE CFRAME = LIGR ;
+		INSET MEAN STD / CFILL=BLANK FORMAT=5.2 ;
+run;
+data table4 ;                 
+SET table3 ;
+id = _N_ ;  
+RUN; 
+
+proc plot data=table4 ;   
+plot ti * id      /vpos=30 hpos=120 ;  /*(표준화)잔차의 인덱스 플롯*/
+plot ti * x1      /vpos=30 hpos=120 ;   /*(표준화)잔차 대 설명변수*/
+plot ti * x2      /vpos=30 hpos=120 ;
+plot ti * x3      /vpos=30 hpos=120 ;
+plot ti * x4      /vpos=30 hpos=120 ;
+plot ti * x5      /vpos=30 hpos=120 ;
+plot ti * x6      /vpos=30 hpos=120 ;
+plot ti * yhat  /vpos=30 hpos=120 ;   /*(표준화)잔차 대 적합값*/
+run;   
+    
+proc reg data=table;
+model y = x1 x2 x3 x4 x5 x6 ;
+quit;
+
+data table5 ;
+set table4 ;
+di = (ei/sqrt(24810082)) ;
+potential_Fuction = hii/(1-hii) ;
+residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+hadi = potential_Fuction + residual_Function ;
+run;
+
+/*(b)의 Hi의값*/
+data table6;
+set table3;
+drop y x1 x2 x3 x4 x5 x6 yhat ei ti hii cov press;
+run;
+
+/*(b)의 ri Ci DFITSi 의값들*/
+proc plot data=table4 ;   
+plot  cooki * id /vpos=30 hpos=120 ;               /*Cook's Distance 인덱스 플롯*/
+plot  df_fit * id /vpos=30 hpos=120 ;                /*DFITS값의 인덱스 플롯*/
+run;
+
+/*(c) 의답*/
+proc plot data=table5 ;   
+plot  hadi * id /vpos=30 hpos=120 ;                                                 /*hadi의 영향력 측도의 인덱스 플롯*/
+plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;    /*잠재성 - 잔차 플롯*/
+run;
+
+/*(c) 의답*/
+proc plot data=table4 ;   
+plot ti * id      /vpos=30 hpos=120 ;  /*(표준화)잔차의 인덱스 플롯*/
+run;
+
+/*(c) 의답*/
+proc plot data=table5 ;   
+plot  hii * id /vpos=50 hpos=120 ;                     /*지레값(leverage value)의 인덱스 플롯*/
+run;
+proc insight data=table5 ; 
+run;
+
+
+/*(a)
+최소제곱 가정을 위반하는지 알아보기 위해서 회귀분석의 표준적인 가정을 먼저 봐야한다고 생각된다.
+회귀분석을 통하여 알아낸 R-squre가 0.95보다 크기 때문에 충분히 선형성을 지녔다고 말할수 있다.
+또한 정규성은 표준화 잔차 정규확률플롯을 통하여 정규성을 위반하지 않는다고 할 수 있다. 
+등분산성은 표준화잔차 대 적합값의 도표를 보고 알 수 있는데 표준화잔차 대 적합값의 도표가 랜덤분포를 나타내고 있지 않으므로 
+등분산성을 위반한다고 할 수 있다.
+또한 vif가 10을 넘으면 공선성에 위반되는데 코딩을 하여 나온 값을 보면 x4와 x5가 공선성에 위반된다.  ---------- 공선성에 위반된다 ????
+독립성은 표준화 잔차의 인덱스 플롯을 통하여서 알 수 있는데 도표가 0주위의 수평띠안에서 랜덤하게 흩어져있어야 한다.
+*/
+
+ 
+
+/*(d) Cook's Distance 인덱스 플롯, DFITS값의 인덱스 플롯, hadi의 영향력 측도의 인덱스 플롯, 잠재성-잔차 플롯를 통하여 찾아낸다.*/

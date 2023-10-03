@@ -1,0 +1,101 @@
+data ex3_1;
+infile "D:\P116.txt" firstobs=2;
+input x y;
+run;
+
+proc reg data=ex3_1;
+model y=x;
+plot y*x;
+run;
+
+/*4.3-a)*/
+/* Minutes = 37.2127 + 9.9695 Units*/
+
+
+proc univariate data=ex3_1 normal plot ;
+      var units;
+      histogram;
+run;
+
+data ex3_2 ;
+      SET ex3_1 ;
+          id = _N_ ;
+RUN;
+
+proc reg data=ex3_1 ;
+      model y = x / r ;
+      ods output Outputstatistics =ex3_2;
+quit;
+
+proc insight data=ex3_2;
+run;
+
+/*4.3-b)*/
+/*proc insight를 통해 여러가지 그래프를 관찰*/
+/*studentresidual vs obervation number 의 plot 에서 위로 볼록한 이차곡선의 패턴이 발견되므로 정규성 가정이 의심됨*/
+/*studentresidual vs obervation number 을 보면 독립성 가정에 문제가 있는 것 으로 보임 왜냐하면 같은 부호의 residual 들이 규칙적으로 나오기 때문에*/
+/*studentresidual vs predicted value 는 그래프가 좌측에서 우측으로 퍼져나가는 모양이 아니므로 등분산성 가정에 문제가 없음으로  판단*/
+
+
+
+
+
+data ex12;
+infile "D:\P120.txt"  firstobs=2;
+input Y X1-X6;
+run;
+
+proc reg data=ex12 ;
+	model Y = X1 X2 X3 X4 X5 X6;
+quit;
+
+
+
+proc reg data=ex12 ;
+	model Y = X1 X2 X3 X4 X5 X6 / r influence vif  ;
+	ods output Outputstatistics = ex12_all;
+quit;
+/*4.12-2*/
+/*ex4_12_all 파일에서 ri ci dfits 값을 관찰할 수 있다*/
+
+
+
+data ex12_merge;
+merge ex12 ex12_all;
+run;
+
+proc insight data=ex12_merge;
+run;
+
+/*4.12-(a)*/ 
+/*studentresidual vs 각각의 variance 를 plot 해보면 random 한 그래프가 나타나므로 선형성 가정이 어느정도 맞다고 볼 수 있다*/  
+/*studentresidual vs 각각의 variance 로부터 각각의 그래프가 좌측에서 우측으로 퍼져 분포하는 모양이 나타나지 않으므로 등분산성 가정이 맞다고 볼 수 있다*/
+/*studentresidual vs observation index 의 플롯이 0을 중심으로 랜덤하게 분포하므로 독립성 가정이 적절함을 알 수 있다*/
+
+/*4.12-(b)*/
+/*계산은 제대로 한 것 같은데, 변수명을 잘 모르겠어요.*/
+proc reg data=ex12_id ;
+	model Y = X1 X2 X3 X4 X5 X6    ;
+	output out=rset_01
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+
+/*4.12-(c)*/
+
+proc plot data=rset_01 ;   
+/*답1   */
+plot ri * id;
+/*답2	*/
+plot  hii * id ; 
+/*답3  */
+plot  cooki * id; 
+/*답4	*/
+plot  df_fit * id;
+run;
+
+
+------ 답이 없다 ;; ------------
+
+
+

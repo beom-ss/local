@@ -1,0 +1,199 @@
+data repair;
+infile "D:\P116.txt" firstobs=2;
+input units minutes;
+run;
+
+proc reg data=repair;
+model minutes=units/influence;
+output out=repair_out
+p=yhat Residual=ei Student=ri Cookd=cooki Rs Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+/* b1 -> p값이 매우 작아 기각하게 되므로 9.96950이 된다
+고로 선형회귀모형을 적합하면
+y=37.21273+9.9695x 가 된다.*/
+
+proc plot data=repair;
+plot minutes*units;
+run;
+/* 표준적인 회귀의 가정중 선형성 가정부분
+선형성 가정은 plot을 이용하여 선형적인 모양인지 확인하면 된다. */
+
+
+/*오차에 대한 가정*/
+/*먼저 정규성  알아보기*/
+proc univariate data=repair_out normal plot;
+var ti;
+QQPLOT ti / NORMAL(MU=EST SIGMA=EST COLOR=RED L=1);
+HISTOGRAM / NORMAL(COLOR=MAROON W=4) CFILL = BLUE CFRAME = LIGR ;
+run;
+
+proc kde data=repair_out out=density; 
+  var ti;
+run;
+proc sort data=density;
+  by ti;
+run;
+goptions reset=all;
+symbol1 c=blue i=join v=none height=1;
+proc gplot data=density;
+  plot density*ti = 1;
+run; quit;
+/* 이 방법들을 이용하여 여러가지 그래프를 통해 정규성임을 확인한다*/
+
+
+/* 등분산성과 독립성 확인*/
+data repair_out2;
+	SET repair_out;
+    	id = _N_ ;  
+RUN; 
+
+proc plot data=repair_out2 ;                        
+	plot ti * id      /vpos=30 hpos=120 ; /*표준화 잔차와 인덱스 플롯 */ 
+    plot ti * units    /vpos=30 hpos=120 ; /* 표준화 잔차와 설명변수 플롯  */
+    plot ti * yhat  /vpos=30 hpos=120 ; /* 표준화 잔차와 적합값의 플롯 */
+run;   
+/* 위 세가지 그래프를 모두 확인을 해보면
+표준화 잔차와 인덱스 플롯에서 랜덤하지 않으므로 독립성이 위배되고
+설명변수에 대한 표준화 잔차가 랜덤하지 않으므로 등분산성을 위배하고
+예측값에 대한 표준화 잔차가 랜덤하지 않으므로 마찬가지로 등분산성을 위배한다*/
+
+
+/* 여기까지 오차에 대한 가정 */
+
+
+/*관측개체에 대한 가정*/
+proc insight data=repair_out2; 
+run; 
+
+proc plot data=repair_out2 ;   
+	plot  hii * id /vpos=30 hpos=120 ;                    /*지레값leverage value)의 인덱스 플롯*/
+  	plot  cooki * id /vpos=30 hpos=120 ;               /*Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id /vpos=30 hpos=120 ;                /*DFITS값의 인덱스 플롯*/
+run;
+/*hii 를 통해 high leverage 가 존재한다는것을 알 수가 있고
+cooki와 df_fit 에서 개체가 잘못된 하나가 존재한다는 것을 알 수가 있어
+이러한 잘못된게 하나 존재하는데 그것이 high leverage임을 알 수가 있다 */
+/* 그리고 위에서 insight보면 24번째 변수가 이러한 변수임을 알 수 있다 */
+
+data repair_out3 ;
+	set repair_out2 ;
+	di = (ei/sqrt(7737.20563)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;   /* hadi 식을 만들어 주는 과정*/
+run;
+proc plot data=repair_out3 ;   
+	plot  hadi * id /vpos=30 hpos=120 ;                                                 /*hadi의 영향력 측도의 인덱스 플롯*/
+  	plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;    /*잠재성 - 잔차 플롯*/
+run;
+/* 여기에서 플랏을 그려보면 residual 도 크코 potential 이 크므로 
+high leverage 이면서 outliear 임을 알 수 있다.
+
+
+
+
+
+/* 4.12*/
+data sample;
+infile "D:\P120.txt" firstobs=2;
+input y x1 x2 x3 x4 x5 x6;
+run;
+
+proc reg sample;
+model y=x1 x2 x3 x4 x5 x6/influence;
+output out=sample_out
+p=yhat Residual=ei Student=ri Cookd=cooki Rs Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+
+/* 정규성 검정*/
+proc kde data=sample_out out=density2; 
+  var ti;
+run;
+proc sort data=density2;
+  by ti;
+run;
+goptions reset=all;
+symbol1 c=blue i=join v=none height=1;
+proc gplot data=density2;
+  plot density*ti = 1;
+run; quit;
+/* plot 이 정규확률 모양이 되므로 정규성이 맞다 */
+
+
+data sample_out2;
+	SET sample_out;
+    	id = _N_ ;  
+RUN; 
+/* index 값을 추가시켜서 index와 같이 보려고 데이터 추가 */
+
+proc plot data=sample_out2 ;
+	plot ti * id      /vpos=30 hpos=120 ; /*표준화 잔차와 인덱스 플롯 */ 
+    plot ti * x1    /vpos=30 hpos=120 ; /* 표준화 잔차와 설명변수 x1 플롯  */
+    plot ti * x2    /vpos=30 hpos=120 ; /* 표준화 잔차와 설명변수 x2 플롯  */
+	plot ti * x3    /vpos=30 hpos=120 ; /* 표준화 잔차와 설명변수  x3 플롯  */
+	plot ti * x4    /vpos=30 hpos=120 ; /* 표준화 잔차와 설명변수  x4 플롯  */
+	plot ti * x5    /vpos=30 hpos=120 ; /* 표준화 잔차와 설명변수 x5 플롯  */
+    plot ti * x6    /vpos=30 hpos=120 ; /* 표준화 잔차와 설명변수 x6 플롯  */
+    plot ti * yhat  /vpos=30 hpos=120 ; /* 표준화 잔차와 적합값의 플롯 */
+run;
+/* 표준화 잔차들이 인덱스 플롯에 랜덤하게 위치하므로 독립성이 위배 되지 않는다*/
+/* 각 설명변수들에 대한 그래프 와 y 햇에 대한 그래프를 보면 랜덤하기 때문에 등분산성 가정을 할 수 있다
+*/
+proc reg data=sample;
+model y= x1-x6  /influence vif;
+quit;
+/* 여기서 vif 값을 보면 x4,x5 를 제외한 나머지는 10 보다 크므로 다중공선성을 가지지만
+x4,x5 는 다중공선성에 위반된다 */
+
+/*관측개체에 대한 가정*/
+proc insight data=sample_out2; 
+run; 
+
+proc plot data=sample_out2 ;   
+	plot  hii * id /vpos=30 hpos=120 ;                    /*지레값leverage value)의 인덱스 플롯*/
+  	plot  cooki * id /vpos=30 hpos=120 ;               /*Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id /vpos=30 hpos=120 ;                /*DFITS값의 인덱스 플롯*/
+run;
+/* hii 에서 보면  별로 표시가 안나지만
+cooki 와 df_fit 에 의한 데이터 들은 두가지가 문제가 생기게 된다
+cooki 에서는 +쪽에 두개
+df_fit 에서는 +,- 쪽에 한개씩 존재하는데
+insigt 에서 값을 살펴보면 34,38 번에서 문제가 생김을 알 수 있다*/
+
+/*(b)*/
+
+data sample_out3;
+	set sample_out2 ;
+	di = (ei/sqrt(26813)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((6+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;   /* hadi 식을 만들어 주는 과정*/
+run;
+
+proc plot data=sample_out3 ;   
+	plot  hadi * id /vpos=30 hpos=120 ;                                                 /*hadi의 영향력 측도의 인덱스 플롯*/
+  	plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;    /*잠재성 - 잔차 플롯*/
+run;
+
+proc plot data=sample_out3 ;   
+	plot  ri * id /vpos=30 hpos=120 ;                    /*지레값leverage value)의 인덱스 플롯*/
+  	plot  cooki * id /vpos=30 hpos=120 ;               /*Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id /vpos=30 hpos=120 ;                /*DFITS값의 인덱스 플롯*/
+	plot hadi*id/vpos=30 hpos=120;						/* Hi와 인덱스 플롯*/
+	plot potential_Fuction*residual_Function /vpos=30 hpos=120; /* 잠재성-잔차플롯 */
+run;
+
+proc insight data=sample_out3; 
+run; 
+
+
+/*
+ 특이값 -> 17,24,34,38,40
+ leverage -> 3,8,15
+영향력 있는 개체 -> 34,38 
+-> 여기서 leverage의 차이는 작아
+결국 특이값에 결정이 많이 되는데
+hi cook's d 등 을 살펴본 결과
+ 34,38 번이 영향력이 있는 개체이다 */

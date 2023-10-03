@@ -1,0 +1,99 @@
+data height;
+infile 'C:\Users\student\Desktop\data set.txt' expandtabs  firstobs=2;
+input xy xx;
+run;
+proc corr data=height cov;
+run; 
+/*공분산 구하는 procedure ->공분산 행렬에서 공분산을 살펴볼수 있다.
+69.4129*/
+data height2;
+set height;
+xx=xx*0.3937;
+xy=xy*0.3937;
+run;
+/* height data 의 값을 불러워서 height2 data 의 변수들을 inch 로 변환시켜준것 */
+proc corr data=height2 cov;
+run;
+/* inch 로 변환시킨후의 공분산 을 구한것 10.75898396 */
+proc corr data=height;
+run;
+/*남편과 아내의 키 사이의 상관계수 구하기 0.76339*/
+proc corr data=height2;
+run;
+/* 남편과 아내의 키가 inch일때 상관계수 구하기 0.76339*/
+data height3;
+set height;
+xx=xy-5;
+run;
+/* 아내의 키를 모든 남편들의 키보다 5cm 작게 변환시켜준것 */
+proc corr data=height3;
+run;
+/* 모든 남편들이 자신보다 5cm작은 여자와 결혼했을경우 상관계수 구한것은 1이다. */
+proc reg data=height;
+model xx=xy;
+quit;
+/*남자키에 따른 여자키들의 회귀 모형 */
+proc reg data=height;
+model xy=xx;
+quit;
+/* 여자키들에 따른 남자키들의 회귀 모형 */
+/* 두가지 회귀모형 모두 확실히 기각을 하기 때문에 어떤것을 반응변수로 놓더라도 상관 없다*/    
+/* j번째 문제 
+기울기가 0이라는 귀무가설에 대한 검정을 선택하면 되고           <---- 검정과정과 기준 ???? (기울기, 절편)
+상관계수 또한 매우 크기 때문에                                  
+관계가 없는것이 아니다 라는 결론이 나온다*/
+data cigarette;
+infile 'C:\Users\student\Desktop\data set2.txt' expandtabs  firstobs=2;
+input state$ age hs income black female price sales;
+run;
+
+proc reg data=cigarette;
+model sales=age hs income black female price ;
+quit;
+/* full model SSE를 구하기 위한 회귀분석*/
+
+proc reg data=cigarette;
+model sales=age hs income black price;
+quit;
+/* reduced model SSE 구하는 회귀분석*/
+/*full model 과 reduced model 을 이용하여 검정통계량을 구할수도 있고
+밑에의 코드와 같이 단순히 test를 이용하여 검정할 수도 있다*/
+
+proc reg data=cigarette;
+model sales=age hs income black female price;
+test female=0;
+quit;
+/* reg 프로그램에서 option 을 이용하여 female=0임을 보여주는것  
+p-값이 0.8507로 크므로 기각하지 못한다 */
+
+proc reg data=cigarette;
+model sales=age hs income black female price;
+test female=hs=0;
+quit;
+/* female 과 hs가 필요하지 않다는 가설 검정 p-값이 0.9789이므로 기각하지 x */   
+
+proc reg data=cigarette;
+model sales=age hs income black female price/i;
+quit;
+/* 여기서 income 의 b1은 0.01895이고 s.e가 0.01022이므로
+t value 만 구하면 된다.*/
+data tvalue;
+t=tinv(0.95,49);
+run;
+/*  여기서 tvalue 가 나오니깐
+0.01895(+-)*1.67655*0.01022가 신뢰구간이 된다.*/
+
+proc reg data=cigarette;
+model sales=age hs black female price;
+quit;
+/* income 을 제거했을때 R스퀘어 값 0.2678*/
+
+proc reg data=cigarette;
+model sales=price age income;
+quit;
+/* price,age,income 에 대해 설명되는 sales의 변이 0.3032*/
+
+proc reg data=cigarette;
+model sales=income;
+quit;
+/* 오직 income 에  대해서만 sales를 회귀시켰을경우의 변이 0.1063*/

@@ -1,0 +1,108 @@
+
+
+ #----------------------------------------------------------------------------------------------------#
+ # 03. Multiple Linear Regression
+ #----------------------------------------------------------------------------------------------------#
+
+ # 1. data import
+  data <- read.table('supervisor.txt',header=F, col.names=c("y","x1","x2","x3","x4","x5","x6"))
+  head(data)
+  dim(data)
+  attach(data)
+
+ # 1.1 pltting
+ 
+ pairs(data) 
+ par(mfrow=c(2,3))
+ plot(y~x1,pch=20); abline(lm(y~x1))
+ plot(y~x2,pch=20); abline(lm(y~x2))
+ plot(y~x3,pch=20); abline(lm(y~x3))
+ plot(y~x4,pch=20); abline(lm(y~x4))
+ plot(y~x5,pch=20); abline(lm(y~x5))
+ plot(y~x6,pch=20); abline(lm(y~x6))
+
+ correlation <- data.frame(x1=cor(y,x1),x2=cor(y,x2),x3=cor(y,x3),x4=cor(y,x4),x5=cor(y,x5),x6=cor(y,x6))
+
+ # 2. parameter estimate - LSE
+  model = lm(y~.)	
+  summary(model)
+  anova(model)
+ 
+ # 3. meaning of Multiple Linear regression parameter
+  m1 = lm(y ~ x1 + x2)
+  summary(m1)
+
+  m2 = lm(y ~ x1)
+  summary(m2)
+  e_y.x1 =  m2$resid
+
+  m3 = lm(x2 ~ x1)
+  summary(m3)
+  e_x2.x1 =  m3$resid
+
+  m4 = lm(e_y.x1 ~ e_x2.x1)
+  summary(m4)
+
+  ########################################        HW        ##########################################
+ 
+  m11 = lm(y ~ x1 + x2 + x3)
+  summary(m11)
+
+  m22 = lm(y ~ x1 + x2)
+  summary(m22)
+  e_y.x1x2 =  m22$resid
+
+  m33 = lm(x3 ~ x1 + x2)
+  summary(m33)
+  e_x3.x1x2 =  m33$resid
+
+  m44 = lm(e_y.x1x2 ~ e_x3.x1x2)
+  summary(m44)
+
+  ####################################################################################################
+
+  # 4. test 1 - each parameter
+  summary(model) 
+  confint(model)
+
+  # ex. H0 beta1=0 vs H1 : not H0
+  out = summary(model)
+  out$coeffi
+  names(out)
+  t = (out$coeffi[2,1]-0)/out$coeffi[2,2]
+  n = length(y)
+  p = 6
+  t0 = qt(0.05/2,n-p-1)
+  2*pt(-abs(t),df=n-p-1)       # p-value
+
+  # 5. test2 - 3.9.1 
+   FM <- model
+   RM0 <- lm(y~1)
+   anova(RM0,FM)
+
+  # 6. test3 - 3.9.2
+   RM1 <- lm(y ~ x1 + x3)
+   anova(RM1,FM)
+
+  # 7. test4 - 3.9.3
+   FM2 <- lm(y~ x1 + x3)
+   w <- x1 + x3 
+   RM2 <- lm(y ~ w)
+   summary(RM2)
+   anova(RM2,FM2)
+
+  # 8. test5 - 3.9.4
+  y2 <- y - x3
+  v = x1 - x3
+
+  RM3 <- lm(y2 ~ v)
+  summary(RM3)
+  anova(RM3,FM2)
+
+  # 9. confidence interval
+  new = data.frame(x1=51,x2=30,x3=39,x4=61,x5=92,x6=45)
+  predict.lm(model,new,interval="p")
+  predict.lm(model,new,interval="c")
+  
+
+  

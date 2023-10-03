@@ -1,0 +1,225 @@
+/*************************************************************************************************************************************/
+/* 사례 : 급료조사 데이터 (Salary Survey) */
+/*************************************************************************************************************************************/
+/*데이터 입력*/
+
+data salary ;
+	infile "C:\Users\kuksunghee\Desktop\대학원\조교\2학기 회귀실\회귀실\13주차\salary_survey.txt" expandtabs firstobs=2 ;
+	input S X E M ;
+run ;
+
+
+/*산점도*/
+goption reset=all ;      
+
+ 
+symbol value=dot interpol=r ;          
+proc gplot data= salary  ;                         
+	plot  S*X ;
+run ; 
+
+/* 그룹 별 산점도 */
+
+data salary ;
+	set salary ;
+	if E=1 and M=0  then class=1 ;     /* 6가지 그룹을 구별하기 위해 class란 변수를 만들고, 1~6까지 범주에 대한 번호를 매김. */
+	if E=1 and M=1  then class=2 ;
+	if E=2 and M=0  then class=3 ;
+	if E=2 and M=1  then class=4 ;
+	if E=3 and M=0  then class=5 ;
+	if E=3 and M=1  then class=6 ;
+run ;
+
+goption reset=all ;                           
+symbol value=dot interpol=r ;          
+proc gplot data= salary  ;                         
+	plot  S*X = class ;
+run ;
+
+/*지시변수를 추가한 모형 적합 및 검토 */
+
+data salary;
+	set salary;
+	if E = 1 then E1=1 ; else E1=0 ;     /* E=1인 경우 */
+	if E = 2 then E2=1 ; else E2=0 ;     /* E=2인 경우 */
+run;
+
+
+proc reg data=salary ;
+	model S = X E1 E2 M / r;
+	output out=salary_stat Student=ri ;
+quit ;
+
+
+
+goption reset=all ;                                      
+symbol value=dot ;                  
+proc gplot data=salary_stat ;                         
+	plot  ri*X=class ;  
+run ;
+/*그룹 별 패턴이 여전히 남아있음을 확인할 수 있음*/
+
+/*interaction effect 추가한 모형 적합 및 검토*/
+
+data salary ;
+	set salary ;
+	E1M=E1*M ;
+	E2M=E2*M ;
+run ;
+
+proc reg data=salary ;
+	model S = X E1 E2 M E1M E2M / r ;
+	output out=salary_stat Rstudent=ri ;
+quit ;
+
+goption reset=all ;                                   
+symbol value=dot  ;                
+proc gplot data=salary_stat ;                         
+	plot  ri*X=class ;  /*축 레이블 사용*/
+run ; 
+
+proc insight data=salary_stat;
+run;
+
+/*33번째 관측치는 특이값으로 보임.*/
+
+/*33번 관측치 제거 후 모형 적합 및 검토*/
+
+data salary;
+	set salary;
+	obs_num = _N_;
+run;
+proc reg data=salary ;
+	model S = X E1 E2 M E1M E2M / r;
+	where obs_num^=33 ;
+	output out = salary_stat_33 Student=ri ;
+quit ;
+
+goption reset=all ;                               
+symbol value=dot ;             
+proc gplot data=salary_stat_33 ;                         
+	plot  ri*X=class ;  
+run ; 
+
+/*더이상 문제점이 발견되지 않는 것 같다.*/
+/*************************************************************************************************************************************/
+
+
+
+/*************************************************************************************************************************************/
+/* 사례 : 고용 전 검사 데이터 (Preemployment Testing) */
+/*************************************************************************************************************************************/
+/*데이터 입력*/
+data test ;
+	infile "C:\Users\kuksunghee\Desktop\대학원\조교\2학기 회귀실\회귀실\13주차\preemployment_testing.txt" expandtabs firstobs=2 ;
+	input TEST RACE JPERF ;
+run ;
+
+/*산점도*/
+
+goption reset=all ;
+symbol value=dot interpol=r ;      
+proc gplot data= test  ;                         
+	plot  JPERF * TEST ;
+run ; 
+
+/* 그룹 별 산점도 */
+
+goption reset=all ;
+symbol value=dot interpol=r ;      
+proc gplot data= test  ;                         
+	plot  JPERF * TEST = RACE  ;
+run ; 
+
+
+/* (1). 다른 기울기 & 다른 절편을 가지는 모형 적합 및 검토 */
+data test ;
+	set test ;
+	TEST_RACE = TEST*RACE ; 
+run ;
+
+proc reg data=test ;        
+	model JPERF = TEST RACE TEST_RACE / r ;
+	test RACE = TEST_RACE = 0 ;
+	output out=test_stat Student=ri ;
+quit;
+
+goption reset=all ;                                      
+	axis1 label=("Studentized residuals") ;  
+symbol value=dot ;                       
+proc gplot data=test_stat ;                         
+	plot ri * TEST = JPERF /vaxis=axis1  ;  
+    plot ri * RACE = JPERF /vaxis=axis1;
+	plot ri * TEST_RACE = JPERF/vaxis=axis1  ;
+run ; 
+
+
+/* (2). 동일한 기울기 & 다른 절편을 가지는 모형 적합 및 검토 */
+proc reg data=test ;         
+	model JPERF = TEST RACE / r ;
+	test RACE = 0 ;
+	output out=test_stat Student=ri ;
+quit;
+
+goption reset=all ;                                      
+symbol value=dot ;                    
+proc gplot data=test_stat ;                         
+	plot ri * TEST = JPERF  ;  
+    plot ri * RACE = JPERF ;
+run ; 
+
+/* (3). 다른 기울기 & 같은 절편을 가지는 모형 적합 및 검토 */
+proc reg data=test ;         
+	model JPERF = TEST TEST_RACE / r  ;            
+	test TEST_RACE = 0 ;
+	output out=test_stat Student=ri ;
+quit;
+
+goption reset=all ;                                      
+symbol value=dot ;              
+proc gplot data=test_stat ;                         
+	plot ri * TEST = JPERF ; 
+    plot ri * TEST_RACE = JPERF  ;
+run ; 
+/*************************************************************************************************************************************/
+
+
+
+/*************************************************************************************************************************************/
+/* 연습문제 5-5  : 옥수수 생산량 */
+/*************************************************************************************************************************************/
+/*데이터 입력*/
+data corn;
+	infile "D:\corn_yeild.txt" expandtabs firstobs=2 ;
+	input yield fertilizer;
+run;
+
+/*(a)*/
+data corn ;   
+	set corn;
+	if fertilizer=1 then F1=1; else F1=0;
+	if fertilizer=2 then F2=1; else F2=0;
+	if fertilizer=3 then F3=1; else F3=0;
+run;
+
+/*(b)*/
+proc reg data=corn ;
+	model yield = F1 F2 F3 ; 
+quit;
+
+/*(c)*/
+proc reg data=corn_A ;
+	model yield = F1 F2 F3 ;
+	test F1=F2=F3=0 ;
+quit;
+
+/*(d)*/
+data corn ;
+	set corn ;
+	if fertilizer in (1,2,3) then F=1; 
+    else F=0;
+run;
+proc reg data=corn ;
+	model yield = F ;
+	test F=0;
+quit;

@@ -1,0 +1,140 @@
+/*연습문제4.3*/
+
+data computer;
+infile "D:\p117.txt"  expandtabs firstobs=2 ;
+input Units 	Minutes;
+run;
+
+proc reg data = computer;
+model minutes = units;
+quit;
+
+/*(a) 모형 적합*/
+
+proc insight data = computer;
+run;
+
+proc reg data=computer ;
+	model minutes = units / r influence vif ;
+	ods output Outputstatistics = temp_all;  /* 모든 통계량을 출력 */
+quit;
+
+proc reg data=computer;
+	model minutes = units  /influence ;
+	output out=com_2
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+proc kde data=COM_2 out=density;
+  var ti;
+run;
+proc sort data=density;
+  by ti;
+run;
+proc gplot data=density;
+  plot density*ti = 1;
+run; quit;
+/*density 와 residual의 그래프를 보면 0을 기준으로 정규분포를 따른다.*/
+/*정규성가정은 위배되지 않는다*/
+
+
+
+/*등분산성, 독립성, 선형성*/
+
+/*관측치 번호 할당*/
+data com_3 ;                 
+	SET com_2 ;
+    	id = _N_ ;  
+RUN; 
+                                            
+proc insight data=com_3; 
+run; 
+
+/*student residual(표준잔차)와 x와의 관계를 산점도로 보게 되면 위로 볼록한 
+이차원 곡선이 나타난다. 이는 선형성가정에 위배된다.
+
+/*student residual를 차례로 나열 할 때   ri=0을 중심으로 랜덤하게
+분포해야 되지만 곡선적 관계가 존재함으로 독립성에 위배된다*/
+
+
+
+/*연습문제 4.12*/
+
+data p;
+infile "D:\p121.txt"  expandtabs firstobs=2 ;
+input y x1 x2 x3 x4 x5 x6;
+run;
+
+proc reg data = p;
+model y =x1 x2 x3 x4 x5 x6 ;
+quit;
+
+proc insight data=p; 
+run; 
+
+proc reg data=p;
+	model y = x1-x6 / vif; /* 설명변수들 사이의 다중공선성(multicollinearity) 탐지 */
+quit;
+/*VIF > 10일 때, 다중공선성이 존재한다고 판단함으로 여기서는 variance inflation값이
+ x1,x2, x3, x6 >10이므로 최소제곱가정이 위반되는 것으로 판단된다.*/
+
+
+proc reg data=p;
+	model y = x1 x2 x3 x4 x5 x6 /r influence vif;
+	output out=p_2
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+/*(b) 위의 결과로 ri, Ci, DFITSi 를 볼 수 있다.*/
+
+proc kde data=p_2 out=density2;
+  var ti;
+run;
+proc sort data=density2;
+  by ti;
+run;
+proc gplot data=density;
+  plot density*ti = 1;
+run; quit;
+
+data P_3 ;
+	set P_2 ;
+	di = (ei/sqrt(26813)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+/*(b) 위의 결과로 하디값을 구할 수있다.*/
+
+
+
+data p_4 ;                 
+	SET p_3 ;
+    	id = _N_ ;  
+RUN; 
+
+
+proc plot data=p_4 ;   
+	plot  hii * id ;                    /*지레값(leverage value)의 인덱스 플롯*/
+  	plot  cooki * id  ;               /*Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id ;                /*DFITS값의 인덱스 플롯*/
+run;
+
+proc plot data=p_4 ;   
+	plot  hadi * id  ;                                                 /*hadi의 영향력 측도의 인덱스 플롯*/
+  	plot  potential_Fuction * residual_Function  ;    /*잠재성 - 잔차 플롯*/
+run;
+
+/*(c)위의 결과로 인덱스플롯과 잠재성 잔차플롯을 볼 수 있다. */
+
+
+proc insight data=p_4; 
+run; 
+
+
+/*(d) potential fuction 과 residual funtion의 산점도를 보면 potential이 높은 8, 3, 16 관측치는 high leverage point로 볼 수 있으며*/
+/*residual이 높은 34, 38 관측치는 outlier로 볼 수 있다.*/
+
+
+
+
+

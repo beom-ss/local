@@ -1,0 +1,43 @@
+
+press<-c(1,1,2,2,1,1,2,2,1,1,2,2,1,1,2,2,1,1,2,2,1,1,2,2) # 1=100압력, 2=150압력
+temp<-c(1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2) # 1=15도, 2=25도
+humid<-c(1,1,1,1,2,2,2,2,3,3,3,3,1,1,1,1,2,2,2,2,3,3,3,3) # 1=20%, 2=40%, 3=50%
+
+press<-c(rep(c(1,1,2,2),6))
+temp<-c(rep(1,12),rep(2,12))
+humid<-c(rep(c(1,1,1,1,2,2,2,2,3,3,3,3),2))
+
+press<-as.factor(press)
+temp<-as.factor(temp)
+humid<-as.factor(humid)
+
+y<-c(7,9,14,16,2,3,5,7,2,1,3,4,10,12,12,15,5,7,3,2,3,2,4,5)
+
+tapply(y, press, mean) # 압력수준 평균
+tapply(y, temp, mean) # 온도수준 평균
+tapply(y, humid, mean) # 습도수준 평균
+
+tapply(y, press:temp:humid, mean) # 압력, 온도, 습도 처리조합평균
+
+par(mfrow=c(1,3))
+interaction.plot(press,temp,y)
+interaction.plot(press,humid,y)
+interaction.plot(temp,humid,y)
+
+model1<-aov(y~press*temp*humid) # 완전모형
+anova(model1)
+model.tables(model1, type="mean")
+
+# 축소모형1
+model2<-aov(y~press+temp+humid+press:temp+press:humid+press:temp:humid)
+anova(model2)
+
+# 축소모형2
+model3<-aov(y~press+temp+humid+press:temp+press:humid)
+anova(model3)
+
+# 만약 반복을 추가한다고 할 경우
+rep<-c(rep(c(1,2),12)) # 1=실험기구A, 2=실험기구B
+
+model4<-aov(y~rep+press*temp*humid)
+anova(model4)

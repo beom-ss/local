@@ -1,0 +1,187 @@
+data sam;
+input x y;
+cards;
+1 	23 
+2 	29 
+3 	49 
+4 	64 
+4 	74 
+5 	87 
+6 	96 
+6 	97 
+7 	109 
+8 	119 
+9 	149 
+9 	145 
+10 	154
+10 	166
+11 	162
+11 	174
+12 	180
+12 	176
+14 	179
+16 	193
+17 	193
+18 	195
+18 	198
+20 	205
+;
+run;
+proc reg data=sam;
+model y=x;
+run;
+/* 단순회귀분석결과에 의해 y=37.21273+9.96950x */
+/*  y x가 선형적 관계가 존재하는 지에 대한 검정
+h0: 베타1=0 
+h1:베타1=0이 아니다.
+회귀계수 b1에 대한 t값 13.81을 귀무가설 기각역의 임계값으로 했을 때 기각역의 확률이 0.0001로 계산되어 있다. 
+이는 회귀계수 b1에 대한 t값 13.81이 유의수준이 0.01%일 때 기각역에 속해있음을 나타내는 것이다. 
+따라서  Minutes와 Units 사이에 선형관계가 존재하지 않는다는 귀무가설을 기각하게 된다*/
+proc reg data=sam ;
+ model y = x / r ;
+ output out=temp_01 
+  p=yhat Residual=ei  Student=ri  Cookd=Ci;
+quit;
+proc reg data=sam ;
+ model y = x  /influence ;
+ output out=temp_02
+  p=yhat Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+proc reg data=sam ;
+ model y = x / r influence vif ;
+ ods output Outputstatistics = temp_all;  /* 모든 통계량을 출력 */
+quit;
+
+proc univariate data=temp_02 normal plot;    /*(표준화)잔차 정규확률플롯*/ /*h0: 정규분포다 hi:정규분포가아니다*/
+ VAR ti ;
+ QQPLOT ti  / NORMAL(MU=EST SIGMA=EST COLOR=RED L=1) ;
+/* PPPLOT ti  / NORMAL(MU=EST SIGMA=EST COLOR=RED L=1) ;*/
+ HISTOGRAM / NORMAL(COLOR=MAROON W=4) CFILL = BLUE CFRAME = LIGR ;
+  INSET MEAN STD / CFILL=BLANK FORMAT=5.2 ;
+run;
+proc kde data=temp_02 out=density; 
+  var ti;
+run;
+proc sort data=density;
+  by ti;
+run;
+goptions reset=all;
+symbol1 c=blue i=join v=none height=1;
+proc gplot data=density;
+  plot density*ti = 1;
+run; quit;
+
+/*평균이 0이고 정규분포를 띄고 있다.*/
+
+data temp_03 ;                 
+ SET temp_02 ;
+     id = _N_ ;  
+RUN; 
+
+proc insight data=temp_03 ;    
+run;
+
+/* ri와 di의 산점도를 보았을 때, 곡선을 띄며 고르게 분포하므로 등분산성에 위배된다.*/   --------- 독립성은 ????
+
+data saem;
+input Y  	X1 	X2 	X3  	X4 	X5   	X6;
+cards;
+443 	49 	79 	76 	8 	15 	205 
+290 	27 	70 	31 	6 	6 	129 
+676 	115 	92 	130 	0 	9 	339 
+536 	92 	62 	92 	5 	8 	247 
+481 	67 	42 	94 	16 	3 	202 
+296 	31 	54 	34 	14 	11 	119 
+453 	105 	60 	47 	5 	10 	212 
+617 	114 	85 	84 	17 	20 	285 
+514 	98 	72 	71 	12 	-1 	242 
+400 	15 	59 	99 	15 	11 	174 
+473 	62 	62 	81 	9 	1 	207 
+157 	25 	11 	7 	9 	9 	45 
+440 	45 	65 	84 	19 	13 	195 
+480 	92 	75 	63 	9 	20 	232 
+316 	27 	26 	82 	4 	17 	134 
+530 	111 	52 	93 	11 	13 	256 
+610 	78 	102 	84 	5 	7 	266 
+617 	106 	87 	82 	18 	7 	276 
+600 	97 	98 	71 	12 	8 	266 
+480 	67 	65 	62 	13 	12 	196 
+279 	38 	26 	44 	10 	8 	110 
+446 	56 	32 	99 	16 	8 	188 
+450 	54 	100 	50 	11 	15 	205 
+335 	53 	55 	60 	8 	0 	170 
+459 	61 	53 	79 	6 	5 	193 
+630 	60 	108 	104 	17 	8 	273 
+483 	83 	78 	71 	11 	8 	233 
+617 	74 	125 	66 	16 	4 	265 
+605 	89 	121 	71 	8 	8 	283 
+388 	64 	30 	81 	10 	10 	176 
+351 	34 	44 	65 	7 	9 	143 
+366 	71 	34 	56 	8 	9 	162 
+493 	88 	30 	87 	13 	0 	207 
+648 	112 	105 	123 	5 	12 	340 
+449 	57 	69 	72 	5 	4 	200 
+340 	61 	35 	55 	13 	0 	152 
+292 	29 	45 	47 	13 	13 	123 
+688 	82 	105 	81 	20 	9 	268 
+408 	80 	55 	61 	11 	1 	197 
+461 	82 	88 	54 	14 	7 	225 
+;
+run;
+
+proc reg data=saem ;
+ model y = x1-x6 / vif ;
+run;
+proc insight data=saem;
+run;
+/* (a) VIF > 10일 때, 다중공선성이 존재한다고 판단된다. x1,x2,x3,x6>10 이어서 적합하다.
+또한,  insight를 통해 y과 x1,x2,x3,x4,x5,x6의 산점도를 그려보았을 때,
+x1,x2,x3,x6은 같은 모양,방향을  띄고 있지만 x4,x5는 랜덤하게 분포되어 있기 때문에 x4,x5의 가정이 위배되었다.*/
+proc reg data=saem ;
+ model y=x1-x6 / r influence vif ;
+ output out=residual_set_01
+  p=yhat Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+data saem1;
+set residual_set_01;
+b_ri = ri;
+b_ci = cooki;
+b_df=df_fit;
+b_h=hii;
+run;
+/*(b) ri, cookd, dffits, hii를 계산한 값이 saem1데이터에 나오게 된다.*/
+data saem ;                 
+	SET residual_set_01 ;
+    	id = _N_ ;  
+RUN; 
+
+proc insight data=residual_set_01; 
+run; 
+
+
+proc plot data=saem;   
+	plot  hii * id /vpos=20 hpos=30 ;                    /*지레값(leverage value)의 인덱스 플롯*/
+  	plot  cooki * id /vpos=20 hpos=30 ;               /*Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id /vpos=20 hpos=30 ;                /*DFITS값의 인덱스 플롯*/
+run;
+data saem2;
+	set saem;
+	di = (ei/sqrt(26813)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+proc plot data= saem2 ;   
+	plot  hadi * id /vpos=30 hpos=120 ;                                                 /*hadi의 영향력 측도의 인덱스 플롯*/
+  	plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;
+/*(c) 각각 인텍스플롯과 잠재성-잔차 플롯을 작성 하는 코드다.*/
+
+
+proc insight data=saem2;
+run;
+/*(d)  그래프에서의 비정상적인 관측개체를 확인해보면 38번 관측치(outlier), [3,5,15]번 관측치=(high laverage), 
+[34,38]번 관측치(outlier&high laverage&influential point&cookd&hadi)정도가 비정상적으로 관측된다.  */
+
+
+

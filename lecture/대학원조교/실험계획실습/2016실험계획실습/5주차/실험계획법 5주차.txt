@@ -1,0 +1,57 @@
+# Ex 3.1
+# preparing data set for Ex 3.1
+RF<-factor(c(160,180,200,220))
+obs<-c(1,2,3,4,5)
+dat_3.1<-expand.grid(obs=obs,RF=RF)
+count_3.1<-c(575,542,530,539,570,565,593,590,579,610,600,651,610,637,629,725,700,715,685,710)
+dat_3.1<-cbind(dat_3.1,count_3.1)
+
+# box-plot 
+boxplot(count_3.1~RF,data=dat_3.1,xlab="RF Power",ylab="Etch rate",main="RF Power vs Etch rate")
+
+# fitting anova
+fit_3.1<-aov(count_3.1~RF,data=dat_3.1)
+summary(fit_3.1)
+
+# Model Adequacy Checking 
+par(mfrow=c(2,2))
+plot(fit_3.1)
+
+# Ex 3.6
+# H0 : mu1=mu2 H0:mu1+mu2=mu3+mu4 H0:mu3=mu4 
+# make contrast 
+contrasmatrix<-cbind(c(1,-1,0,0),c(1,1,-1,-1),c(0,0,1,-1))
+contrasts(dat_3.1$RF)<-contrasmatrix
+# result for t-value anova
+summary.lm(aov(count_3.1~RF,data=dat_3.1))
+
+
+# Ex 3.7
+install.packages("agricolae")
+library(agricolae)
+# using scheffe in agricolae
+fit_sch<-scheffe.test(fit_3.1,"RF",group=F)
+
+# using TukeyHSD
+fit_tuk <- TukeyHSD(x=fit_3.1, "RF", conf.level=0.95)
+# using TukeyHSD another function in agricolae
+fit_tuk2<-HSD.test(fit_3.1,"RF",group = F)
+
+# Ex 3.8
+# using LSD in agricolae
+fit_lsd<-LSD.test(fit_3.1,"RF",group=F)
+# using pairwise.t.test
+fit_lsd2<-pairwise.t.test(dat_3.1$count_3.1,dat_3.1$RF, p.adjust="none")
+summary(fit_lsd2)
+# Ex 3.11
+# preparing data set for Ex 3.11
+bat<-factor(c(1,2,3,4))
+obs_3.11<-c(1,2,3,4)
+dat_3.11<-expand.grid(bat=bat,obs=obs_3.11)
+count_3.11<-c(98,91,96,95,97,90,95,96,99,93,97,99,96,92,95,98)
+dat_3.11<-cbind(dat_3.11,count_3.11)
+
+# fitting anova
+fit_3.11<-aov(count_3.11~bat,data=dat_3.11)
+summary(fit_3.11)
+

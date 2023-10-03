@@ -1,0 +1,144 @@
+data comrepair;
+      infile "D:\sas\p117.txt" expandtabs firstobs=2 ;
+      input Min Units;
+run;
+proc reg data=comrepair;
+model Min=Units;
+run;
+proc insight data=comrepair;
+
+run;
+/*(a) reg를 썼습니다.  R-Square     0.8966로 꽤나 잘 설명된다고 생각됩니다.*/
+/*(b)*/
+proc reg data=comrepair ;
+      model Min=Units / r influence vif ;
+      output out=temp2
+           Rstudent=ti residual=ri;  /* Rstudent값 및 잔차 저장 */
+quit;
+/*1. 잔차의 합은 0입니다.
+위의 분석 실시에서 제일 아래에 보면 <Sum of Residuals 0>가 잔차의 합입니다.
+잔차의 합이 0맞습니다.
+*/
+proc univariate data=temp2 normal plot;    /*(표준화)잔차 정규확률플롯*/
+var ti;
+run;
+/*2. 데이터의 분산은 정규분포를 따릅니다.
+H0:정규성을 따른다.
+H1:정규성을 따르지 않는다.
+유의수준 0.05일 때,
+Kolmogorov-Smirnov의 D값이 0.155317로 0.05보다 크므로 귀무가설을 기각할 수 없어 정규성을 따릅니다.
+*/
+
+data temp3 ;
+      SET temp2 ;
+          id = _N_ ;
+RUN;
+proc plot data=temp3 ;                         /* v = vertical axis(세로축)을 의미, h = horizontal axis(가로축)을 의미  */
+      plot ti * id    /vpos=36 hpos=80 ;       /*(표준화)잔차의 인덱스 플롯 -> 등분산성 및 독립성 체크*/
+run;
+
+/*
+3. 등분산성
+분산이 나팔형으로 퍼지는게 아니라 등분산성을 위배한다고 생각되지 않습니다.
+4. 독립성
+위의 도표에서 분포가 감소하다가 증가하는 모양이 마치 2차원 모형과 비슷하므로 독립성은 만족하지 않는다고 생각됩니다.
+5. 선형성
+위의 도표가 u모양의 2차원 그래프와 비슷하므로 선형성이 위배된다고 생각합니다. 
+*/
+proc insight data=temp3;
+run;
+/*                           */
+data EX;
+      infile "D:\sas\p121.txt" expandtabs firstobs=2 ;
+      input Y X1 X2 X3 X4 X5 X6;
+run;
+proc reg data=EX ;
+      model  Y = X1-X6 / r influence vif ;
+      ods output Outputstatistics = temp_all;  /* 모든 통계량을 출력 */
+quit;
+proc print data=temp_all;
+run;
+proc insight data=temp_all;
+run;
+proc univariate data=temp_all normal plot;    /*(표준화)잔차 정규확률플롯*/
+var RStudent;
+run;
+/*(a)
+잔차의 합은 0인가?
+위의 분석 실시에서 제일 아래에 보면 <Sum of Residuals 0>가 잔차의 합입니다.
+잔차의 합이 0맞습니다.
+
+정규성 검정 : H0:정규성을 만족한다. vs H1:정규성을 만족하지 않는다.
+유의수준을 0.05라 할 때,
+Kolmogorov-Smirnov의 D값이  0.10242로 0.05보다 크고, p값이 0.15보다 크므로 귀무가설을 기각할 수 없어
+정규성을 위배한다고 하지 않는 것 같습니다.
+*/
+data temp_all2;
+set temp_all;
+id= _N_ ;
+run;
+proc plot data=temp_all2 ;                         /* v = vertical axis(세로축)을 의미, h = horizontal axis(가로축)을 의미  */
+      plot RStudent * id  ;       /*(표준화)잔차의 인덱스 플롯 -> 등분산성 및 독립성 체크*/
+run;
+/* 등분산성 : 처음에는 y값이 중간에 머무르다가 나중으로 갈수록 퍼지는 경향이 있으므로 등분산성은 위배된다고 봅니다.
+선형성 : 분포가 나팔형이지만 중간점이 일정한 형태므로 선형성은 위배되지 않는 것 같습니다.    
+독립성 : 잔차의 +-가 고르게 분포되므로 독립성은 위배되지 않는 것 같습니다.
+*/
+/*(b)
+ri는 Residual, Ci는 CooksD, DFITSi는 DFFITS, hadi는 아래에서 만들었습니다.*/
+proc gplot data = temp_all2;
+  plot cooksd*id/ haxis=axis2;
+plot Residual*id/ haxis=axis2 ;
+plot DFFITS*id / haxis=axis2   ;
+run;
+/*(c)*/
+/*hadi 제외 모든 플랏 생성했습니다.
+hadi는 잘 안되서 아래에서 다시 만들었습니다.*/
+
+proc reg data = EX;
+   model  Y = X1-X6 / r influence vif;
+      output out=temp_2
+            p=yhat      Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+run;
+data temp_3 ;
+      set temp_2 ;
+          id = _N_ ;
+      di = (ei/sqrt(24810082)) ;
+    potential_Fuction = hii/(1-hii) ;
+      residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+      hadi = potential_Fuction + residual_Function ;
+run;
+proc plot data=temp_3 ;
+      plot  hadi * id /vpos=35 hpos=100 ;/*hadi의 영향력 측도의 인덱스 플롯*/
+        plot  potential_Fuction * residual_Function / vpos=35 hpos=100  ;/*잠재성-잔차 플롯*/
+run;
+proc print data=temp_3;
+var hadi;
+run;
+/* hadi 값 출력(아래) 및 hadi의 플랏과 잠재성-잔차 플랏 생성(위)
+hadi는 몰라서 해메다가 겨우 찾았습니다..*/
+
+
+proc gplot data = temp_al2;
+  plot cooksd*id/ haxis=axis2;
+plot Residual*id/ haxis=axis2 ;
+plot DFFITS*id / haxis=axis2   ;
+run;
+proc plot data=temp_3 ;
+      plot  hadi * id /vpos=35 hpos=100 ;                                                 /*hadi의 영향력 측도의 인덱스 플롯*/
+        plot  potential_Fuction * residual_Function /vpos=35 hpos=100 ;    /*잠재성 - 잔차 플롯*/
+run;
+proc insight data=temp_3;
+run;
+/* (d)
+플랏들에서 확인한 결과입니다. 쿡디 34,38, Residual 34,38, 24, DFITS 34,38, hadi 3,8,15가 수상합니다. 
+
+프락 인사이트에서 [분석-산점도 Y=포텐셜, X=Residual]로 확인한 결과 
+3,7,8,10,12,15번으로 포텐셜 값이 0.35보다 크므로 high leverage인 것 같습니다.
+(2*(p+1)/n<pii면 high leverage입니다. 여기서는 기준값이 0.35입니다.
+
+outlier는 residual이 크고 따로 떨어져 있는 모습을 하는 34,38 같습니다.(기준은 3*E-04로 택했습니다.)
+
+DFITS의 임계값은 2*sqrt((p+1)/(n-p-1))로 약0.9211입니다.(계산기)
+그런데 34의 값은 -1.2815이고, 38의 값은 1.4803으로 절대값이 0.9211보다 크므로 influential인 점 같습니다.
+*/

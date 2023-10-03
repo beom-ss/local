@@ -1,0 +1,213 @@
+/*문 4.3*/
+data com_rep;
+infile "D:\com_rep.txt" firstobs=2;
+input uni min;
+run;
+
+/*(a)*/
+proc reg data=com_rep;
+model min=uni;
+run;
+/*P value가 매우 작아 모델이 유효하다고 볼 수 있다.*/
+/*부품수를 예측변수로, 수리시간을 반응변수로 하여 적합된 모델은 다음과 같다.*/
+/*y= 37.21273 + 9.96950*x*/
+
+/*(b)*/
+proc plot data=com_rep;
+plot min*uni;
+run;
+/*<선형성가정>*/
+/*산점도를 확인해보면 선형성을 가짐을 확인할 수 있다.*/
+
+/*<오차에 대한 가정>*/
+/*-정규성가정-*/
+proc reg data=com_rep ;
+	model min = uni  / r influence vif ;
+	output out=residual_set
+		p=yhat	Residual=ei Student=ri Rstudent=ti Cookd=cooki h=hii DFFITS=df_fit ;
+quit;
+proc univariate data=residual_set normal plot;    /*(표준화)잔차 정규확률플롯*/
+	VAR ri ; 
+	QQPLOT ri / NORMAL(MU=EST SIGMA=EST COLOR=RED L=1) ;
+	run;
+/*내적표준화잔차의 정규확률플롯을 확인해보면 정규성을 따름을 확인할 수 있다. 표준정규분포의 직선과 비슷*/
+
+/*-등분산가정 및 무상관성-*/
+data residual_set2 ;                 
+	SET residual_set ;
+    	id = _N_ ;  
+RUN; 
+proc plot data=residual_set2 ;
+	plot ri * id      /vpos=30 hpos=120 ; 
+/*(표준화)잔차의 인덱스 플롯 -> 등분산성 체크*/
+/*	플롯을 확인해보면 랜덤한 패턴이 아닌 비선형성 관계가 있는 것 처럼 보인다. 따라서 잔차의 독립성가정이 위반되었음을 알 수 있다.*/
+    plot ri * uni     /vpos=30 hpos=120 ;  
+/*(표준화)잔차 대 설명변수 -> 오차와 설명변수 사이의 무상관 체크*/
+/*	플롯을 확인해보면 랜덤한 패턴이 아닌  것 처럼 보인다. 따라서 잔차와 설명변수가 서로 무상관하다고 할 수 없다. 즉, 등분산성의 위반*/
+    plot ri * yhat  /vpos=30 hpos=120 ;   
+/*(표준화)잔차 대 적합값 -> 오차와 적합값 사이의 무상관 체크*/
+/*	플롯을 확인해보면 랜덤한 패턴이 아닌 것 처럼 보인다. 따라서 잔차와 적합값이 서로 무상관하다고 할 수 없다. 즉, 등분산성의 위반*/
+run;
+
+/*<관측개체에 대한 가정>*/
+proc plot data=residual_set2 ;   
+	plot  hii * id /vpos=30 hpos=120 ;           
+/*지레값(leverage value)의 인덱스 플롯*/
+/*	24번 관측치의 leverage가 높다는 것을 확인할 수 있다.*/
+  	plot  cooki * id /vpos=30 hpos=120 ;         
+/*Cook's Distance 인덱스 플롯*/
+/*24번 관측치가 주목할 만한 dfits값을 가짐을 확인할 수 있다.*/
+	plot  df_fit * id /vpos=30 hpos=120 ; 
+/*DFITS값의 인덱스 플롯*/
+/*24번 관측치가 주목할 만한 cook's d값을 가짐을 확인할 수 있다.*/
+run;
+
+/*Hadi의 영향력 측도*/
+proc reg data=com_rep ;
+	model min = uni  ;
+quit;
+data residual_set3 ;
+	set residual_set2 ;
+	di = (ei/sqrt(7737.20563)) ;                                                             /*di=(ei/sqrt(SSE))*/
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+proc plot data=residual_set3 ;   
+	plot  hadi * id /vpos=30 hpos=120 ;                                           
+/*hadi의 영향력 측도의 인덱스 플롯*/
+/*	24번 관측값의 영향력이 유달리 크게 보임을 확인할 수 있다.*/
+  	plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;   
+/*잠재성 - 잔차 플롯*/
+/*	잠재성-잔차 플롯에서 잔차와 잠재성이 유달리 크게 나타나는 한 관측값을 확인할 수 있다.*/
+run;
+proc insight data=residual_set3 ; 
+run;
+/*위의 잠재성-잔차 플롯에서 확인한 그 점의 인덱스를 확인할 수 있다. 24번 관측값임을 확인할 수 있다.*/
+
+
+/*문 4.12*/
+data data12;
+infile "D:\data12.txt" firstobs=2;
+input y x1 x2 x3 x4 x5 x6;
+run;
+/*(a)*/
+proc plot data=data12;
+plot y*x1;
+plot y*x2;
+plot y*x3;
+plot y*x4;
+plot y*x5;
+plot y*x6;
+run;
+
+/*<오차에 대한 가정>*/
+/*-정규성가정-*/
+proc reg data=data12 ;
+	model y = x1 x2 x3 x4 x5 x6  / r influence vif ;
+	output out=residual_set_12
+		p=yhat	Residual=ei Student=ri Rstudent=ti Cookd=cooki h=hii DFFITS=df_fit ;
+quit;
+proc univariate data=residual_set_12 normal plot;    /*(표준화)잔차 정규확률플롯*/
+	VAR ri ;
+	QQPLOT ri  / NORMAL(MU=EST SIGMA=EST COLOR=RED L=1) ;
+	run;
+/*내적표준화잔차의 정규확률플롯을 확인해보면 정규성을 따름을 확인할 수 있다. 표준정규분포의 직선과 비슷*/
+
+/*-등분산가정 및 무상관성-*/
+data residual_set_12_2 ;
+	SET residual_set_12;
+    	id = _N_ ;
+RUN; 
+proc plot data=residual_set_12_2 ;   
+	plot ri * id      /vpos=30 hpos=120 ; 
+/*(표준화)잔차의 인덱스 플롯 -> 등분산성 및 독립성 체크*/
+/*	플롯을 확인해보면 비교적 랜덤하게 분포되어 있는 것 처럼 보인다. 따라서 잔차의 독립성이 위반되었다고 하기 어렵다.*/
+    plot ri * x1     /vpos=30 hpos=120 ;  
+	plot ri * x2     /vpos=30 hpos=120 ; 
+	plot ri * x3     /vpos=30 hpos=120 ; 
+	plot ri * x4     /vpos=30 hpos=120 ; 
+	plot ri * x5     /vpos=30 hpos=120 ; 
+	plot ri * x6     /vpos=30 hpos=120 ; 
+/*(표준화)잔차 대 설명변수 -> 오차와 설명변수들 사이의 무상관 체크*/
+/*	플롯을 확인해보면 각각의 설명변수에 따른 잔차가 비교적 랜덤하게 고루 분포되어 있는 것 처럼 보인다. 따라서 잔차의 등분산성이 위반되었다고 하기 어렵다.*/
+	plot ri * yhat  /vpos=30 hpos=120 ;   
+/*(표준화)잔차 대 적합값 -> 오차와 적합값 사이의 무상관 체크*/
+/*	플롯을 확인해보면 적합값과에 따른 잔차가 비교적 랜덤하게 고루 분포되어 있는 것 처럼 보인다. 따라서 잔차의 등분산성이 위반되었다고 하기 어렵다.*/
+run;
+
+/*<다중공선성>*/
+proc reg data=data12 ;
+	model y = x1 x2 x3 x4 x5 x6  / r influence vif ;
+	output out=residual_set_12
+		p=yhat	Residual=ei Student=ri Rstudent=ti Cookd=cooki h=hii DFFITS=df_fit ;
+quit;
+/*각 설명변수에 따른 Variance Inflation 값을 확인한다.*/
+/*x1 -> 1062.16714*/
+/*x2 -> 1103.59564*/
+/*x3 -> 764.39446*/
+/*x4 -> 1.03629*/
+/*x5 -> 1.02331*/
+/*x6 -> 5310.50481*/
+/*이므로 현저히 작은 Variance Inflation값을 갖는 x4와 x5 설명변수가 다중공선성에 위반한다고 할 수 있다.*/
+/*다중공선성의 판단의 기준은 10으로 한다. (인터넷 검색정보)*/
+
+/*<관측개체에 대한 가정>*/
+proc plot data=residual_set_12_2 ;   
+	plot  hii * id /vpos=30 hpos=120 ;           
+/*지레값(leverage value)의 인덱스 플롯*/
+/*	3, 8, 15번 관측치의 leverage가 비교적 높다는 것을 확인할 수 있다.*/
+  	plot  cooki * id /vpos=30 hpos=120 ;         
+/*Cook's Distance 인덱스 플롯*/
+/*34, 38번 관측치가 주목할 만한 dfits값을 가짐을 확인할 수 있다.*/
+	plot  df_fit * id /vpos=30 hpos=120 ; 
+/*DFITS값의 인덱스 플롯*/
+/*34, 38번 관측치가 비교적 주목할 만한 cook's d값을 가짐을 확인할 수 있다.*/
+run;
+/*3, 8, 15번 관측치는 leverage는 높지만 cook's d나 dfits ~인덱스 플롯에서는 두드러지지 않는 것으로 보아 잔차가 작은 점으로 예상된다.*/
+/*반면에 34, 38번 관측치는 영향력 측면에서 주목할 만한 값을 가진다고 볼 수 있다.*/
+
+/*(b)*/
+proc reg data=data12 ;
+	model y = x1 x2 x3 x4 x5 x6  / r influence vif ;
+	output out=residual_set_12
+		p=yhat	Residual=ei Student=ri Rstudent=ti Cookd=cooki h=hii DFFITS=df_fit ;
+quit;
+
+data b_12;
+set residual_set_12_2;
+ri_b = ri;
+ci_b = cooki;
+dfitsi_b = df_fit;
+                          /*Hadi의 영향력 측도*/
+ di = (ei/sqrt(26813)) ;                                                             /*di=(ei/sqrt(SSE))*/
+ potential_Fuction = hii/(1-hii) ;
+ residual_Function = ((6+1)/(1-hii))*((di*di)/(1-di*di)) ;
+ hadi = potential_Fuction + residual_Function ;
+run;
+/*b_12 데이터셋에서 ri는 ri_b, Ci는 ci_b, DFITSi는 dfitsi_b, 그리고 Hi는 hadi열의 값과 같다.*/
+
+/*(c)*/
+proc plot data=b_12 ;   
+	plot  ri_b * id /vpos=30 hpos=120 ;
+/*표준화잔차의의 인덱스 플롯*/
+	plot  ci_b * id /vpos=30 hpos=120 ; 
+/*Cook's D의 영향력 측도의 인덱스 플롯*/
+	plot  dfitsi_b * id /vpos=30 hpos=120 ; 
+/*DFITS의 영향력 측도의 인덱스 플롯*/
+	plot  hadi * id /vpos=30 hpos=120 ;                                           
+/*Hadi의 영향력 측도의 인덱스 플롯*/
+  	plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;   
+/*잠재성 - 잔차 플롯*/
+run;
+
+/*(d)*/
+proc insight data=b_12 ; 
+run;
+특이값 : 40, 24, 17, 34, 38
+/*잠재성-잔차플롯에서 x축 방향으로 멀리 떨어져있는 점으로 판단*/
+높은 지레점 : 3, 8, 15
+/*잠재성-잔차플롯에서 y축 방향으로 멀리 떨어져있는 점으로 판단*/
+영향력 있는 개체 : 34, 38
+/*잠재성-잔차플롯에서 원점에서 멀리 떨어져있는 정도와,
+Cook's D/DFITS/Hadi의 영향력 측도의 인덱스 플롯각각을 보았을때 영향력이 유달리 큰 관측값으로 판단. */

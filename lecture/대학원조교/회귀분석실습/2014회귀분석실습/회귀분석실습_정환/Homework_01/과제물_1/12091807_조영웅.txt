@@ -1,0 +1,153 @@
+data zzz; 
+infile "D:\zzz.txt"; 
+input man woman; run; 
+
+/*set입력*/
+
+proc reg data=zzz;
+model man=woman;
+run;
+
+/*센치단위의 회귀분석*/
+
+proc corr data= zzz cov ;
+var man ;
+with woman;
+run;
+
+/*cm 단위의 cov결과값*/
+/* 2-10번 소문제 (a)번의 답 cov는 69.412*/
+
+data zzz2;
+infile "D:\ zzz.txt";
+input man3.2 woman4.2;
+run;
+
+/* cm를 m환산하여 data삽입*/
+
+proc reg data=zzz2;
+model man=woman;
+run;
+
+/* M 단위 회귀분석 */
+proc corr data=zzz2 cov;
+var man;
+with woman;
+run;
+/*M 단위의 cov구하기*/
+/* b의 cov는 0.0069412 c의상관계수:0.76339 (d)cm와 m와 상관없이 상관계수는 같다*/
+
+data zzz3;
+infile "D:\zzz.txt";
+input man woman;
+woman2= man-5;
+keep man woman2;
+run;
+/*남자들의키보다 5cm작은여자들 데이터입력*/
+
+proc reg data=zzz3;
+model man=woman2;
+run;
+/*위의 데이터 분석*/
+
+proc corr data=zzz3 cov;
+var man; with woman2; run;
+/*위 데이터의 cov분석*/
+/*e번의 상관계수는 1이 나오게 된다*/
+
+proc reg data=zzz;
+model man=woman;
+run;
+proc reg data=zzz;
+model woman=man;
+run;
+/*f번: 결정계수의 차이가없다. 어떤걸 반응변수로해도같다고생각하므로 랜덤으로 man의키를 반응변수로결정.*/
+
+proc reg data=zzz;
+model man=woman;
+run;
+
+/*g번: h0 : B1= 0 검정
+t=11.46 p<0.0001이므로 유의수준 0.05에서 h0을 기각할수있다*/
+
+/*h번: h0 : B0=0 검정
+t=3.17 p<0.0021이므로 유의수준 0.05에서 h0을 기각할수있다*/
+
+/*j번: 비슷한 키를 가진 사람들끼리 결혼한다는 경향이 있다면 B0은 0이며 B1는 1에 근접해야할것이다
+ 그리하여 검정할려면 h문제의 가설과 검정을 쓸 수 있고 나머지는쓸수없다.
+g문제의 h0은 B1=0에서 1로 바꿔 검정해야한다. 그러나 검정을 실행하여 
+기울기와 절편항0이아님을 확인하였고 즉  비슷한키끼리 결혼한다는 것은 맞지않다.*/
+
+/*k번: 비슷한 키를 가진사람들끼리 결혼을 하지않는 다는 것으로 결정했다. 즉
+이 데이터의 분석을 통해 man의키에 비례하여 여자들의 키가 대체적으로 크다는 결론을 알 수 있다.
+상대적인 키에서 비슷한 키를 가진 이성끼리 결혼을 하는 경향이 있다는것으로 알수있음./*
+
+/* 3-14번
+
+data dambe;
+infile "D:\dambe.txt" expandtabs firstobs=2;
+input age hs income black female price sales;
+run; 
+/* set 입력*/
+
+proc reg data=dambe;
+model sales = age hs income black female price;
+quit;
+proc reg data=dambe;
+model sales = age hs income black price;
+quit;
+proc reg data=dambe ;
+	model sales = age hs income black female price ;  
+	test female=0 ;
+quit;
+/*a번: 귀무가설 : female=0 가설을 설정하고 검정을 했을때
+p값이 0.85이고 유의수준 0.05하에서 귀무가설을 기각x
+female이 필요하다고 말할 수 없음.*/
+
+proc reg data=dambe;
+model sales = age hs income black female price;
+quit;
+proc reg data=dambe;
+model sales = age income black price;
+quit;
+proc reg data=dambe ;
+	model sales = age hs income black female price ;  
+	test female=hs=0 ;
+quit;
+/*b번: 귀무가설 : female=hs=0으로 설정하고 검정을 했을때
+p값이0.9789 이고 유의수준 0.05하에서  귀무가설을 기각x
+female,hs가 필요하다고 말할 수 없음*/
+
+proc reg data=dambe;
+model sales = age hs income black female price/i;
+quit;
+data tvalue ;
+alpha=0.05 ; df=50-6-1 ;
+t=tinv(1-alpha/2,df) ;
+run ; /*t-value 값 계산*/
+/*c번: income의 추정치=0.01895이고 s.e=0.01022이고
+95%confidence ->> 0.01895±t(0.025,51-7)*(0.01022) */
+
+proc reg data=dambe;
+model sales = age hs income black female price;
+quit;
+proc reg data=dambe;
+model sales = age hs black female price;
+quit;
+/*d번: income을 제거했을 때, 
+R-스퀘어가 00.2678 26.78%  */
+
+proc reg data=dambe;
+model sales = age hs income black female price;
+quit;
+
+proc reg data=dambe;
+model sales = age income price;
+quit;
+/*e번: income을 제거했을 때, R-스퀘어 0.3032 30.32%.*/
+
+proc reg data=dambe;
+model sales = income;
+quit;
+/*f번: income만 남깄을때  R-스퀘어가 0.1063이므로 income에 의해서 설명되는 것은 
+10.63%라고 할 수 있고, income에 sales의 변이는 10.63%이다.*/

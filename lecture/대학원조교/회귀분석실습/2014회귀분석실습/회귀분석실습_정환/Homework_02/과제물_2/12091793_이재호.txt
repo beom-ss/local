@@ -1,0 +1,130 @@
+data rep;
+	input no unit time;
+	cards;
+ 1  1  23
+ 2  2  29
+ 3  3  49
+ 4  4  64
+ 5  4  74
+ 6  5  87
+ 7  6  96
+ 8  6  97
+ 9  7 109
+10  8 119
+11  9 149
+12  9 145
+13 10 154
+14 10 166
+15 11 162
+16 11 174
+17 12 180
+18 12 176
+19 14 179
+20 16 193
+21 17 193
+22 18 195
+23 18 198
+24 20 205
+;
+run;
+
+proc reg data=rep;
+model time=unit;                 /* (a) time을 반응변수로, unit을 종속변수로 한 선형회귀모형,*/
+quit;
+
+proc gplot data=rep;          /* 선형성 가정 -> 산점도를 보면 선형성을 확인할수 있다.*/
+plot time*unit;
+run;
+
+proc reg data=rep;
+	model time=unit / influence;
+	output out=rep_2
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+proc kde data=rep_2 out=density;
+	var ti;
+run;
+proc sort data=density;
+  by ti;
+run;
+goptions reset=all;
+symbol1 c=blue i=join v=none height=1;
+proc gplot data=density;                             /* 정규성 가정 -> 그래프를 보면 위로볼록인 정규그래프와 흡사하므로 정규성가정을 위배하지 않는다라고 할 수 있다.*/
+  plot density*ti = 1;
+run; quit;
+
+data rep_3 ;                 
+	set rep_2 ;
+    	id = _N_ ;  
+run; 
+
+proc plot data=rep_3 ;
+	plot ti * id      /vpos=30 hpos=120 ;
+	plot ti * unit     /vpos=30 hpos=120 ;
+	plot ti * yhat  /vpos=30 hpos=120 ; 
+run;
+
+/*  산점도를 차례로 보면 3개의 산점도 모두 표준화 잔차가 랜덤하게 나와있어야하는데 선형성을 띄므로 등분산성 독립성 및  자기상관성에 위배된다라고 할 수 있다.*/
+
+                                                                         ----------- 자기상관성은 위배한다는 말은 완전히 잘못된 것이며, 자기상관성 자체가 잇어서는 안됨.
+
+
+
+data exam;
+infile "D:\p120.txt"  expandtabs firstobs=2 ;
+input y x1 x2 x3 x4 x5 x6;
+run;
+
+proc reg data = exam;
+model y =x1 x2 x3 x4 x5 x6 ;
+quit;
+
+proc reg data=exam;
+	model y = x1-x6 / vif; /* (a) 예측변수들 사이의 다중공선성을 보인다. x1 x2 x3 x6 가 10보다 크므로 다중공선성에 위배된다고 볼 수 있다. * vif>10 일때 다중공선성이 존재한다고 할수 있는데 x4, x5가 10보다 작다 */
+quit;
+
+
+
+proc reg data=exam;
+	model y= x1 x2 x3 x4 x5 x6 / influence;
+	output out=exam_2
+		p=yhat	Residual=ei Student=ri Cookd=cooki Rstudent=ti h=hii COVRATIO=cov DFFITS=df_fit PRESS=press ;
+quit;
+
+proc kde data=exam_2 out=density2;
+	var ti;
+run;
+proc sort data=density2;
+  by ti;
+run;
+goptions reset=all;
+symbol1 c=blue i=join v=none height=1;
+data exam_3 ;                 
+	set exam_2 ;
+    	id = _N_ ;  
+run;
+
+proc plot data=exam_3 ;   
+	plot  ri * id /vpos=30 hpos=120 ;                    /*(c) ri의 인덱스 플롯*/
+  	plot  cooki * id /vpos=30 hpos=120 ;               /*(b) ci=Cook's Distance 인덱스 플롯*/
+	plot  df_fit * id /vpos=30 hpos=120 ;                /*(b) =DFITS값의 인덱스 플롯*/
+run;
+
+data exam_4 ;
+	set exam_3 ;
+	di = (ei/sqrt(2.59540)) ;
+    potential_Fuction = hii/(1-hii) ;
+	residual_Function = ((1+1)/(1-hii))*((di*di)/(1-di*di)) ;
+	hadi = potential_Fuction + residual_Function ;
+run;
+
+/* (b) 데이터 셋을 보면 오른쪽에 하디값, ri, DFITSi를 알 수가 있다.*/
+
+proc plot data=exam_4 ;   
+	plot  hadi * id /vpos=30 hpos=120 ;                                                 /*(c)hadi의 영향력 측도의 인덱스 플롯*/
+  	plot  potential_Fuction * residual_Function /vpos=30 hpos=120 ;    /*(c)잠재성 - 잔차 플롯*/
+run;
+
+proc insight data=exam_4;/*(d)  그래프에서의 38번(outlier), 12번(outlier & high laverage& influential point), 34번(outlier&high laverage&influential point),17번(outlier)이 비정상적으로 볼 수 있다..*/
+run;

@@ -1,0 +1,222 @@
+
+# import dataset
+
+ data <- read.csv('BOQ.csv',header=T)
+
+ head(data)
+ dim(data)
+ attach(data)
+
+#------------------------------------------------------------------------------------#
+#  detect influential point 
+#------------------------------------------------------------------------------------#
+
+# first fitting
+
+ m <- lm(y~x1+x2+x3+x4+x5+x6+x7,data=data) 
+ summary(m)
+ out <- anova(m)
+ s <- sqrt(out$M)[8]
+ 
+ student.r <- resid(m)/(s*sqrt(1-lm.influence(m)$hat)) 
+ r <- rstandard(m)
+ t <- rstudent(m)
+ cbind(student.r,r,t)
+
+ yhat <- m$fitted
+ e <- m$resid
+ hii <- lm.influence(m)$hat
+ dffits <- dffits(m)
+ cooks.d <- cooks.distance(m)
+ 
+ data.frame(y,yhat,e,student.r,hii,dffits,cooks.d)
+
+ par(mfrow=c(3,1))
+ plot(hii, type="l")
+ plot(dffits, type="l")
+ plot(cooks.d, type="l")
+
+ ######  remove influential point 
+
+# second fitting
+
+ m2 <-lm(y~x1+x2+x3+x4+x5+x6+x7,subset = -23) 
+ summary(m2)
+ out2 <- anova(m2)
+ s2 <- sqrt(out2$M)[8]
+
+ student.r2 <- resid(m2)/(s*sqrt(1-lm.influence(m2)$hat))
+ hii2 <- lm.influence(m2)$hat
+ dffits2 <- dffits(m2)
+ cooks.d2 <- cooks.distance(m2)
+ 
+ data.frame(y[-23],student.r2,hii2,dffits2,cooks.d2)
+
+
+ # 선형성과 정규성 가정에 대한 그래프
+
+ # model 1
+
+
+ plot(student.r~m$fitted)
+
+
+ par(mfrow=c(3,3))
+ plot(student.r~x1)
+ plot(student.r~x2)
+ plot(student.r~x3)
+ plot(student.r~x4)
+ plot(student.r~x5)
+ plot(student.r~x6)
+ plot(student.r~x7)
+
+ # model 2
+
+ plot(student.r2 ~ m2$fitted)
+
+
+ par(mfrow=c(3,3))
+ plot(student.r2~x1[-23])
+ plot(student.r2~x2[-23])
+ plot(student.r2~x3[-23])
+ plot(student.r2~x4[-23])
+ plot(student.r2~x5[-23])
+ plot(student.r2~x6[-23])
+ plot(student.r2~x7[-23])
+ 
+ detach(data)
+ data2 <- data[-23,]
+ attach(data2)
+
+ #  Diagonostic plot 
+ m.y_x1 <- lm(y ~ x2+x3+x4+x5+x6+x7)
+ m.x1 <- lm(y ~ x2+x3+x4+x5+x6+x7)
+ plot(resid(m.x1), resid(m.y_x1))
+
+ m.y_x2 <- lm(y ~ x1+x3+x4+x5+x6+x7)
+ m.x2 <- lm(y ~ x1+x3+x4+x5+x6+x7)
+ plot(resid(m.x2), resid(m.y_x2))
+
+ m.y_x3 <- lm(y ~ x1+x2+x4+x5+x6+x7)
+ m.x3 <- lm(y ~ x1+x2+x4+x5+x6+x7)
+ plot(resid(m.x3), resid(m.y_x3))
+
+ m.y_x4 <- lm(y ~ x1+x2+x3+x5+x6+x7)
+ m.x4 <- lm(y ~ x1+x2+x3+x5+x6+x7)
+ plot(resid(m.x4), resid(m.y_x4))
+
+ m.y_x5 <- lm(y ~ x1+x2+x3+x4+x6+x7)
+ m.x5 <- lm(y ~ x1+x2+x3+x4+x6+x7)
+ plot(resid(m.x5), resid(m.y_x5))
+
+ m.y_x6 <- lm(y ~ x1+x2+x3+x4+x5+x7)
+ m.x6 <- lm(y ~ x1+x2+x3+x4+x5+x7)
+ plot(resid(m.x6), resid(m.y_x6))
+
+ m.y_x7 <- lm(y ~ x1+x2+x3+x4+x5+x6)
+ m.x7 <- lm(y ~ x1+x2+x3+x4+x5+x6)
+ plot(resid(m.x7), resid(m.y_x7))
+
+ detach(data2)
+#------------------------------------------------------------------------------------#
+#  Diagonostic plot - example 5.6 
+#------------------------------------------------------------------------------------#
+
+########### partial regression plot
+
+ example5.6 <- read.table('example5-6.txt', header=F, col.names=c("x1","x2","y"))
+ 
+ attach(example5.6)
+
+ m1 <- lm(y ~ x2)
+ m2 <- lm(x1 ~ x2)
+
+ par(mfrow=c(2,2))
+ plot(resid(m2), resid(m1), xlab="X1 residuals", ylab="Y resduals")
+
+ m3 <- lm(y ~ x1)
+ m4 <- lm(x2 ~ x1)
+
+ plot(resid(m4), resid(m3), xlab="X2 residuals", ylab="Y resduals")
+
+########### Partial residual plot
+
+ m <- lm(y ~ x1 + x2)
+
+ par(mfrow=c(1,2))
+ plot(x1, resid(m)+ x1*m$coefficients[2], xlab="X1", ylab="residual+component")
+ plot(x2, resid(m)+ x2*m$coefficients[3], xlab="X2", ylab="residual+component")
+
+
+# Transformation of X1 to X1^(1/3)
+
+ x11 <- x1^(1/3)
+ m1 <- lm(y ~ x2)
+ m22 <- lm(x11 ~ x2)
+
+ plot(resid(m22), resid(m1), xlab="X1^(1/3) residuals", ylab="Y resduals")
+
+ m33 <- lm(y ~ x11)
+ m44 <- lm(x2 ~ x11)
+
+ plot(resid(m44), resid(m33), xlab="X2 residuals", ylab="Y resduals")
+
+
+ par(mfrow=c(2,2))
+
+ detach(example5.6)
+#------------------------------------------------------------------------------------#
+
+ #  linearity
+
+ ex6.3 <- read.csv('ex6.3.csv',header=T)
+ attach(ex6.3)
+
+ plot(n~t)
+ m <- lm(n~t)
+ summary(m)
+ r <- rstudent(m)
+
+ plot(r~t)
+
+ ln_n <- log(n)
+ m2 <- lm(ln_n ~ t)
+ summary(m2)
+ r2 <- rstudent(m2)
+  
+ plot(r2 ~ t)
+ detach(ex6.3) 
+
+ #  homo-1
+
+ ex6.5 <- read.csv('ex6.5.csv',header=T)
+ attach(ex6.5)
+
+ plot(y~x)
+ m <- lm(y~x)
+ summary(m)
+
+ r <- rstudent(m)
+ plot(r~x)
+ y2 <- y/x
+ x2 <- 1/x
+ m2 <- lm(y2~x2)
+ summary(m2)
+ r3 <- rstudent(m2)
+
+ plot(r3~x2)
+
+#  homo-2
+ lny <- log(y) 
+ plot(lny~x) 
+ m1 <- lm(lny~x)
+ r <- rstudent(m1)
+ plot(r~x)
+ x2 <- x*x
+ m2 <- lm(lny~x+x2)
+
+ r2 <- rstudent(m2)
+
+ plot(r2~m2$fitted)
+  plot(r2~x)
+  plot(r2~x2)
